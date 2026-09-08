@@ -1127,6 +1127,8 @@ public class MainActivity extends AppCompatActivity {
     void clientConnectedStateChanged() {
         runOnUiThread(()-> {
             boolean connected = getLorieView().connected();
+            if (!connected)
+                setCapturingEnabled(false);
 
             // A picture-in-picture window has nothing to show without a client, and there is no way
             // back to the normal size from it, so the window is closed.

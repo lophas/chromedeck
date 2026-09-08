@@ -428,6 +428,7 @@ public class TouchInputHandler {
     }
 
     public void setCapturingEnabled(boolean enabled) {
+        enabled &= mActivity.getLorieView().connected();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (mInjector.pointerCapture && enabled)
                 mActivity.getLorieView().requestPointerCapture();
