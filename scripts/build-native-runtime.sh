@@ -115,6 +115,25 @@ ANSWERS
     )
 fi
 
+# talloc 2.5 needs its libreplace objects even when archived statically.
+# Run this outside the configure/build cache so existing archives are repaired too.
+python3 - "$TALLOC_SRC" "$STATIC_ROOT/lib/libtalloc.a" "$AR" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+
+source, archive = map(Path, sys.argv[1:3])
+replace_dir = source / "bin/default/lib/replace"
+objects = []
+for name in ("replace", "closefrom"):
+    candidates = sorted(replace_dir.glob(name + ".c*.o"))
+    if not candidates:
+        raise SystemExit("Missing talloc compatibility object: " + name)
+    # Waf may build both PIC and static variants; include only one per source file.
+    objects.append(str(candidates[0]))
+subprocess.run([sys.argv[3], "rcs", str(archive), *objects], check=True)
+PY
+
 (
     cd "$PROOT_SRC/src"
     if ! command -v gawk >/dev/null 2>&1; then
