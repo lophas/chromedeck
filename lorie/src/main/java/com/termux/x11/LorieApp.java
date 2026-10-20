@@ -82,7 +82,7 @@ public class LorieApp extends Application {
 
         // The parts of the notification that don't depend on preferences, built once and reused as a template.
         baseNotification = new NotificationCompat.Builder(this, channelId)
-                .setContentTitle("Termux:X11")
+                .setContentTitle(getResources().getString(R.string.lorie_app_name))
                 .setSmallIcon(R.drawable.ic_x11_icon)
                 .setContentText(getResources().getText(R.string.lorie_notification_content_text))
                 .setOngoing(true)
