@@ -38,7 +38,7 @@ audio_start() {
     # One monitor stream mixes all browser outputs. Fixed PCM format matches
     # AndroidAudioOutput: signed 16-bit little-endian, stereo, 48 kHz.
     parec --raw --device=android.monitor --format=s16le --rate=48000 \
-        --channels=2 --latency-msec=40 --process-time-msec=10 \
+        --channels=2 --latency-msec=120 --process-time-msec=40 \
         > /tmp/desktop-chrome-audio/output.pcm &
     capture_pid=$!
     export PULSE_SINK=android

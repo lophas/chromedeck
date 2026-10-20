@@ -39,7 +39,11 @@ final class AndroidAudioOutput implements AutoCloseable {
     // Accessed only by the PCM worker.
     private volatile boolean focusAttempted;
     private boolean playing;
+    private int primedBytes, startThresholdBytes;
+    private float appliedVolume = Float.NaN;
     private long lastAudible;
+    private long lastReport, receivedBytes, writtenBytes;
+    private int lastUnderruns;
 
     AndroidAudioOutput(Context context) {
         directory = new File(LinuxRuntime.tmp(context), "desktop-chrome-audio");
@@ -72,10 +76,14 @@ final class AndroidAudioOutput implements AutoCloseable {
                             .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
                             .setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
                     .setTransferMode(AudioTrack.MODE_STREAM)
-                    .setBufferSizeInBytes(Math.max(minimum, RATE * PcmFrames.FRAME_BYTES / 10))
+                    .setBufferSizeInBytes(Math.max(minimum, RATE * PcmFrames.FRAME_BYTES / 4))
                     .build();
             if (track.getState() != AudioTrack.STATE_INITIALIZED)
                 throw new IOException("Android AudioTrack initialization failed.");
+            // Queue about 125 ms before play(): do not start an empty track.
+            // Keep headroom for the nonblocking priming writes below.
+            startThresholdBytes = Math.min(track.getBufferSizeInFrames() * PcmFrames.FRAME_BYTES / 2,
+                    RATE * PcmFrames.FRAME_BYTES / 8);
             focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                     .setAudioAttributes(attributes)
                     .setOnAudioFocusChangeListener(change -> {
@@ -105,6 +113,7 @@ final class AndroidAudioOutput implements AutoCloseable {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
             while (!stopping) {
                 expireSilence();
+                reportBufferHealth();
                 Os.poll(polls, 250);
                 if (stopping) break;
                 if ((poll.revents & OsConstants.POLLIN) == 0) {
@@ -125,6 +134,7 @@ final class AndroidAudioOutput implements AutoCloseable {
                     throw error;
                 }
                 if (count <= 0) { frames.reset(); continue; }
+                receivedBytes += count;
                 int aligned = frames.append(input, count, output);
                 if (aligned == 0) continue;
                 if (PcmFrames.audible(output, aligned)) {
@@ -138,14 +148,27 @@ final class AndroidAudioOutput implements AutoCloseable {
                     pause();
                     continue; // Always drain the FIFO, including during calls / focus loss.
                 }
-                if (!playing) { track.play(); playing = true; }
-                track.setVolume(volume);
+                float nextVolume = volume;
+                if (nextVolume != appliedVolume) {
+                    track.setVolume(nextVolume);
+                    appliedVolume = nextVolume;
+                }
                 int offset = 0;
                 while (!stopping && playbackAllowed && offset < aligned) {
-                    int written = track.write(output, offset, aligned - offset, AudioTrack.WRITE_BLOCKING);
+                    int written = track.write(output, offset, aligned - offset,
+                            playing ? AudioTrack.WRITE_BLOCKING : AudioTrack.WRITE_NON_BLOCKING);
                     if (written < 0) throw new IOException("AudioTrack write failed: " + written);
                     if (written == 0) { Thread.sleep(5); continue; }
                     offset += written;
+                    writtenBytes += written;
+                    if (!playing) {
+                        primedBytes += written;
+                        if (primedBytes >= startThresholdBytes) {
+                            track.play();
+                            playing = true;
+                            primedBytes = 0;
+                        }
+                    }
                 }
             }
         } catch (InterruptedException interrupted) {
@@ -167,10 +190,23 @@ final class AndroidAudioOutput implements AutoCloseable {
     }
 
     private void pause() {
-        if (!playing) return;
+        if (!playing && primedBytes == 0) return;
         track.pause();
         track.flush();
         playing = false;
+        primedBytes = 0;
+    }
+
+    private void reportBufferHealth() {
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastReport < 10000) return;
+        lastReport = now;
+        int underruns = track.getUnderrunCount();
+        String details = "PCM received=" + receivedBytes + " written=" + writtenBytes
+                + " underruns=" + underruns + " playing=" + playing;
+        if (underruns > lastUnderruns) Log.w(TAG, details);
+        else Log.i(TAG, details);
+        lastUnderruns = underruns;
     }
 
     private void release() {

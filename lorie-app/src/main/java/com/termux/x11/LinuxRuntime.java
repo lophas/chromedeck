@@ -50,7 +50,12 @@ public final class LinuxRuntime {
         File loader32 = new File(nativeDir, "libproot_loader32.so");
         if (loader32.isFile())
             env.put("PROOT_LOADER_32", loader32.getAbsolutePath());
-        env.put("PROOT_NO_SECCOMP", "1");
+        // Device opt-in for comparing PRoot's syscall filtering fast path with
+        // the conservative baseline. This is not Chrome's browser sandbox.
+        boolean accelerate = new File(context.getFilesDir(), "runtime/enable-proot-seccomp").isFile();
+        if (accelerate) env.remove("PROOT_NO_SECCOMP");
+        else env.put("PROOT_NO_SECCOMP", "1");
+        android.util.Log.i("DesktopChrome", "PRoot syscall acceleration requested=" + accelerate);
         return builder;
     }
 

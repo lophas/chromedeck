@@ -88,6 +88,14 @@ while (( SECONDS - started < duration )); do
             '
         } >> "$out/phantom-processes.txt"
     fi
+    if (( sample % 15 == 0 )); then
+        {
+            printf '\n=== %s ===\n' "$stamp"
+            adb shell -n dumpsys cpuinfo | tr -d '\r' | awk '
+                NR < 4 || /desktopchromeandroid|libproot|desktop-chrome|pulseaudio|parec|pacat/
+            '
+        } >> "$out/cpuinfo.txt"
+    fi
     sample=$((sample + 1))
     sleep 2
 done
