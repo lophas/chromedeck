@@ -4,106 +4,138 @@ package com.termux.x11;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.ServiceConnection;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Looper;
+import android.app.ProgressDialog;
+import android.content.*;
+import android.os.*;
 import android.util.Log;
+import android.widget.Toast;
+import java.io.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-/** Keeps an embedded X server bound while at least one X11 window exists. */
+/** Prepares the persistent browser installation and keeps its display service bound. */
+@SuppressWarnings("deprecation")
 public class DesktopChromeApp extends LorieApp implements Application.ActivityLifecycleCallbacks {
     private static final String TAG = "DesktopChrome";
     private final Handler main = new Handler(Looper.getMainLooper());
     private int windows;
-    private boolean preparing;
-    private boolean bound;
+    private boolean preparing, starting, bound;
+    private ProgressDialog progressDialog;
+    private Activity progressOwner;
+    private AlertDialog errorDialog;
+    private volatile String progressText = "Preparing browser";
+    private volatile int progressPercent = -1;
+    private long lastProgressPost;
 
     private final ServiceConnection connection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.i(TAG, "Embedded X server service connected");
-            // The server announces readiness through the upstream ACTION_START protocol.
+            Log.i(TAG, "Embedded display service connected");
         }
         @Override public void onServiceDisconnected(ComponentName name) {
-            Log.e(TAG, "Embedded X server process disconnected");
+            if (bound && windows > 0) {
+                releaseServer();
+                showError(new IOException("The display process stopped."));
+            }
         }
         @Override public void onNullBinding(ComponentName name) {
-            showError(new IOException("The X server service returned no connection."));
             releaseServer();
+            showError(new IOException("The display service returned no connection."));
         }
         @Override public void onBindingDied(ComponentName name) {
-            showError(new IOException("The X server service stopped."));
             releaseServer();
+            showError(new IOException("The display service stopped."));
+        }
+    };
+
+    private final BroadcastReceiver sessionState = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (windows == 0) return;
+            String state = intent.getStringExtra("state");
+            if ("started".equals(state)) {
+                starting = false;
+                dismissProgress();
+            } else if ("exited".equals(state)) {
+                starting = false;
+                dismissProgress();
+                int code = intent.getIntExtra("code", -1);
+                if (code == 0) {
+                    for (MainActivity activity : MainActivity.getInstances()) activity.finish();
+                } else {
+                    releaseServer();
+                    showError(new IOException("Chrome stopped (" + code + ").\n"
+                            + intent.getStringExtra("details")));
+                }
+            } else if ("error".equals(state)) {
+                releaseServer();
+                showError(new IOException(intent.getStringExtra("details")));
+            }
         }
     };
 
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
+        IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
+        if (Build.VERSION.SDK_INT >= 33)
+            registerReceiver(sessionState, filter, Context.RECEIVER_NOT_EXPORTED);
+        else
+            registerReceiver(sessionState, filter);
     }
 
-    @Override public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
-        if (!(activity instanceof MainActivity))
-            return;
+    @Override public void onActivityCreated(Activity activity, Bundle state) {
+        if (!(activity instanceof MainActivity)) return;
         windows++;
         prepareAndBind();
     }
 
     private void prepareAndBind() {
-        if (bound || preparing)
+        if (bound) return;
+        if (preparing) {
+            showProgress();
             return;
+        }
         preparing = true;
+        progressText = "Preparing browser";
+        progressPercent = -1;
+        showProgress();
         new Thread(() -> {
             Exception failure = null;
-            String probe = null;
             try {
-                File runtime = new File(getFilesDir(), "runtime");
-                File marker = new File(runtime, "xkb-ready-v1");
-                if (!marker.isFile()) {
-                    copyAssetTree("xkb", new File(runtime, "xkb"));
-                    File rules = new File(runtime, "xkb/rules/evdev");
-                    if (!rules.isFile())
-                        throw new IOException("Bundled XKB rules are missing.");
-                    if (!marker.createNewFile() && !marker.isFile())
-                        throw new IOException("Cannot save XKB installation state.");
-                }
-                File tmp = new File(runtime, "tmp");
-                if (!tmp.isDirectory() && !tmp.mkdirs())
-                    throw new IOException("Cannot create the X11 runtime directory.");
-                probe = RuntimeProbe.check(this);
+                prepareKeyboard();
+                RuntimeInstaller.ensureInstalled(this, this::reportProgress);
             } catch (Exception e) {
                 failure = e;
             }
             final Exception error = failure;
-            final String probeResult = probe;
             main.post(() -> {
                 preparing = false;
-                if (windows == 0)
+                if (windows == 0) {
+                    dismissProgress();
                     return;
+                }
                 if (error != null) {
                     showError(error);
                     return;
                 }
                 try {
+                    starting = true;
                     bound = bindService(new Intent(this, EmbeddedX11Service.class),
                             connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
                     if (!bound)
-                        showError(new IOException("Cannot bind the X server service."));
-                    else
-                        showProbeResult(probeResult);
-                } catch (Exception e) {
-                    showError(e);
-                }
+                        showError(new IOException("Cannot start the browser display service."));
+                } catch (Exception e) { showError(e); }
             });
-        }, "desktop-chrome-prepare").start();
+        }, "desktop-chrome-setup").start();
+    }
+
+    private void prepareKeyboard() throws IOException {
+        File runtime = new File(getFilesDir(), "runtime");
+        File marker = new File(runtime, "xkb-ready-v1");
+        if (!marker.isFile()) {
+            copyAssetTree("xkb", new File(runtime, "xkb"));
+            if (!new File(runtime, "xkb/rules/evdev").isFile())
+                throw new IOException("Bundled keyboard data is missing.");
+            if (!marker.createNewFile() && !marker.isFile())
+                throw new IOException("Cannot record keyboard installation.");
+        }
     }
 
     private void copyAssetTree(String asset, File destination) throws IOException {
@@ -122,35 +154,83 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
              FileOutputStream output = new FileOutputStream(destination)) {
             byte[] buffer = new byte[16384];
             int count;
-            while ((count = input.read(buffer)) != -1)
-                output.write(buffer, 0, count);
+            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
         }
     }
 
-    private void showProbeResult(String result) {
+    private synchronized void reportProgress(String phase, int percent) {
+        boolean changedPhase = !phase.equals(progressText);
+        progressText = phase;
+        progressPercent = percent;
+        long now = SystemClock.elapsedRealtime();
+        if (!changedPhase && percent != 100 && now - lastProgressPost < 150) return;
+        lastProgressPost = now;
+        main.post(this::refreshProgress);
+    }
+
+    private void showProgress() {
         MainActivity activity = MainActivity.getFocusedOrAnyInstance();
-        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
-            new AlertDialog.Builder(activity)
-                    .setTitle("Desktop Chrome Android")
-                    .setMessage(result)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show();
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
+        if (progressDialog != null && progressOwner == activity) {
+            refreshProgress();
+            return;
         }
+        dismissProgress();
+        progressOwner = activity;
+        progressDialog = new ProgressDialog(activity);
+        progressDialog.setTitle("Desktop Chrome Android");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setMax(100);
+        progressDialog.setCancelable(false);
+        progressDialog.setCanceledOnTouchOutside(false);
+        refreshProgress();
+        progressDialog.show();
+    }
+
+    private void refreshProgress() {
+        if (progressDialog == null) return;
+        progressDialog.setMessage(progressText);
+        progressDialog.setIndeterminate(progressPercent < 0);
+        if (progressPercent >= 0) progressDialog.setProgress(progressPercent);
+    }
+
+    private void dismissProgress() {
+        if (progressDialog != null) progressDialog.dismiss();
+        progressDialog = null;
+        progressOwner = null;
     }
 
     private void showError(Exception error) {
-        Log.e(TAG, "Embedded X11 startup failed", error);
+        starting = false;
+        dismissProgress();
+        Log.e(TAG, "Browser startup failed", error);
         MainActivity activity = MainActivity.getFocusedOrAnyInstance();
-        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
-            new AlertDialog.Builder(activity)
-                    .setTitle("Desktop Chrome Android")
-                    .setMessage("Startup failed:\n" + error)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show();
-        }
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
+        if (errorDialog != null) errorDialog.dismiss();
+        StringWriter trace = new StringWriter();
+        error.printStackTrace(new PrintWriter(trace));
+        String details = trace + "\n\nSetup log:\n"
+                + LinuxRuntime.readTail(new File(getFilesDir(), "runtime/setup.log"), 8192)
+                + "\n\nSession log:\n" + LinuxRuntime.readTail(LinuxRuntime.log(this), 8192);
+        errorDialog = new AlertDialog.Builder(activity)
+                .setTitle("Desktop Chrome Android")
+                .setMessage(error.getMessage() == null ? error.toString() : error.getMessage())
+                .setPositiveButton("Retry", (dialog, which) -> {
+                    releaseServer();
+                    main.postDelayed(this::prepareAndBind, 500);
+                })
+                .setNegativeButton("Close", (dialog, which) -> {
+                    for (MainActivity window : MainActivity.getInstances()) window.finish();
+                })
+                .setNeutralButton("Copy details", (dialog, which) -> {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Desktop Chrome Android", details));
+                    Toast.makeText(this, "Details copied", Toast.LENGTH_SHORT).show();
+                }).show();
     }
 
     private void releaseServer() {
+        starting = false;
         if (bound) {
             bound = false;
             unbindService(connection);
@@ -158,11 +238,17 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     }
 
     @Override public void onActivityDestroyed(Activity activity) {
-        if (activity instanceof MainActivity && --windows == 0)
+        if (progressOwner == activity) dismissProgress();
+        if (activity instanceof MainActivity && --windows == 0) {
             releaseServer();
+            if (errorDialog != null) errorDialog.dismiss();
+            errorDialog = null;
+        }
+    }
+    @Override public void onActivityResumed(Activity activity) {
+        if (activity instanceof MainActivity && (preparing || starting)) showProgress();
     }
     @Override public void onActivityStarted(Activity activity) {}
-    @Override public void onActivityResumed(Activity activity) {}
     @Override public void onActivityPaused(Activity activity) {}
     @Override public void onActivityStopped(Activity activity) {}
     @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) {}
