@@ -63,6 +63,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         preparing = true;
         new Thread(() -> {
             Exception failure = null;
+            String probe = null;
             try {
                 File runtime = new File(getFilesDir(), "runtime");
                 File marker = new File(runtime, "xkb-ready-v1");
@@ -77,10 +78,12 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
                 File tmp = new File(runtime, "tmp");
                 if (!tmp.isDirectory() && !tmp.mkdirs())
                     throw new IOException("Cannot create the X11 runtime directory.");
+                probe = RuntimeProbe.check(this);
             } catch (Exception e) {
                 failure = e;
             }
             final Exception error = failure;
+            final String probeResult = probe;
             main.post(() -> {
                 preparing = false;
                 if (windows == 0)
@@ -94,6 +97,8 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
                             connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
                     if (!bound)
                         showError(new IOException("Cannot bind the X server service."));
+                    else
+                        showProbeResult(probeResult);
                 } catch (Exception e) {
                     showError(e);
                 }
@@ -122,13 +127,24 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         }
     }
 
+    private void showProbeResult(String result) {
+        MainActivity activity = MainActivity.getFocusedOrAnyInstance();
+        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
+            new AlertDialog.Builder(activity)
+                    .setTitle("Desktop Chrome Android")
+                    .setMessage(result)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+        }
+    }
+
     private void showError(Exception error) {
         Log.e(TAG, "Embedded X11 startup failed", error);
         MainActivity activity = MainActivity.getFocusedOrAnyInstance();
         if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
             new AlertDialog.Builder(activity)
                     .setTitle("Desktop Chrome Android")
-                    .setMessage("X11 startup failed:\n" + error)
+                    .setMessage("Startup failed:\n" + error)
                     .setPositiveButton(android.R.string.ok, null)
                     .show();
         }
