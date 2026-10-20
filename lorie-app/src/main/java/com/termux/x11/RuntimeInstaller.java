@@ -90,7 +90,40 @@ public final class RuntimeInstaller {
             LinuxRuntime.writeText(chromeMarker, chromeSha);
             packageFile.delete();
         }
+        prepareAudio(context, progress, root);
         progress.update("Starting Chrome", -1);
+    }
+
+    private static void prepareAudio(Context context, Progress progress, File root) throws Exception {
+        File marker = new File(root, ".desktop-chrome-audio-v1");
+        if (!marker.isFile() || !new File(root, "usr/bin/pulseaudio").isFile()
+                || !new File(root, "usr/bin/parec").isFile()
+                || !new File(root, "usr/bin/pactl").isFile()) {
+            progress.update("Preparing audio packages", -1);
+            LinuxRuntime.runChecked(context, 300, "/usr/bin/env", "DEBIAN_FRONTEND=noninteractive",
+                    "/usr/bin/apt-get", "-o", "APT::Sandbox::User=root", "update");
+            LinuxRuntime.runChecked(context, 900, "/usr/bin/env", "DEBIAN_FRONTEND=noninteractive",
+                    "/usr/bin/apt-get", "-o", "APT::Sandbox::User=root", "install", "--yes",
+                    "--no-install-recommends", "pulseaudio", "pulseaudio-utils", "libasound2-plugins");
+            LinuxRuntime.writeText(marker, "Debian PulseAudio output bridge v1\n");
+        }
+        File audio = new File(root, "usr/local/lib/desktop-chrome-audio");
+        for (String name : new String[] { "default.pa", "client.conf", "asound.conf", "session.sh" }) {
+            try (InputStream input = context.getAssets().open("audio/" + name)) {
+                LinuxRuntime.writeText(new File(audio, name), read(input));
+            }
+        }
+        // The base image has an empty machine-id. PulseAudio needs a stable,
+        // valid per-install ID. Replace a guest symlink without following it.
+        File machineId = new File(root, "etc/machine-id");
+        String id = "";
+        if (!java.nio.file.Files.isSymbolicLink(machineId.toPath()) && machineId.isFile()) {
+            try (InputStream input = new FileInputStream(machineId)) { id = read(input).trim(); }
+        }
+        if (!id.matches("[0-9a-fA-F]{32}")) {
+            java.nio.file.Files.deleteIfExists(machineId.toPath());
+            LinuxRuntime.writeText(machineId, java.util.UUID.randomUUID().toString().replace("-", "") + "\n");
+        }
     }
 
     private static String read(InputStream input) throws IOException {

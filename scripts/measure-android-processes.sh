@@ -46,11 +46,11 @@ fi
 
 adb shell -n dumpsys activity settings > "$out/activity-settings.txt"
 adb shell -n dumpsys package "$pkg" | awk '/versionCode=|versionName=/ {print}' > "$out/app-version.txt"
-adb logcat -b all -v threadtime -T 1 -s ActivityManager:I DesktopChrome:V lmkd:V am_kill:I am_proc_died:I > "$out/events.txt" 2>&1 </dev/null &
+adb logcat -b all -v threadtime -T 1 -s ActivityManager:I DesktopChrome:V DesktopChromeAudio:V lmkd:V am_kill:I am_proc_died:I > "$out/events.txt" 2>&1 </dev/null &
 log_pid=$!
 
 adb shell -n am start -n "$pkg/com.termux.x11.MainActivity" >/dev/null
-printf 'time,app_processes,native_processes,renderers,extension_renderers,gpu_processes,crashpad_handlers\n' > "$out/counts.csv"
+printf 'time,app_processes,native_processes,renderers,extension_renderers,gpu_processes,crashpad_handlers,pulse_servers,pcm_readers\n' > "$out/counts.csv"
 echo "Recording for $duration seconds. Use Chrome on the phone."
 
 sample=0
@@ -62,6 +62,8 @@ while (( SECONDS - started < duration )); do
         NR>1 {
             total++
             if ($4 == "chrome_crashpad_handler") crashpad++
+            if ($4 == "pulseaudio") pulse++
+            if ($4 == "parec" || ($4 == "pacat" && /android.monitor/)) pcm++
             if (index($5,pkg)!=1) native++
             if ($0 ~ /--type=renderer([[:space:]]|$)/ || $0 ~ /--renderer-client-id=/) {
                 renderer++
@@ -69,7 +71,7 @@ while (( SECONDS - started < duration )); do
             }
             if ($0 ~ /--type=gpu-process([[:space:]]|$)/ || $0 ~ /--gpu-preferences=/) gpu++
         }
-        END {printf "%s,%d,%d,%d,%d,%d,%d\n",t,total,native,renderer,extension,gpu,crashpad}
+        END {printf "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",t,total,native,renderer,extension,gpu,crashpad,pulse,pcm}
     ' "$out/current-processes.txt" | tee -a "$out/counts.csv"
     {
         printf '\n=== %s ===\n' "$stamp"

@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# A private, software-only server: do not probe Android's ALSA/udev devices.
+.fail
+load-module module-native-protocol-unix socket=/tmp/desktop-chrome-audio/native auth-anonymous=1
+load-module module-null-sink sink_name=android format=s16le rate=48000 channels=2 channel_map=front-left,front-right
+set-default-sink android

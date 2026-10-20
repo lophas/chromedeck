@@ -116,9 +116,10 @@ public final class LinuxRuntime {
         }
     }
 
-    public static Process startSession(Context context) throws Exception {
+    public static Process startSession(Context context, boolean audioEnabled) throws Exception {
         configureDns(context);
         ProcessBuilder builder = command(context,
+                "/usr/bin/env", "DESKTOP_CHROME_AUDIO=" + (audioEnabled ? "1" : "0"),
                 "/usr/bin/dbus-run-session", "--", "/usr/local/bin/desktop-chrome-session");
         builder.redirectOutput(ProcessBuilder.Redirect.to(log(context)));
         return builder.start();

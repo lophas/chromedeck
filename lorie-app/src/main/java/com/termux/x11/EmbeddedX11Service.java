@@ -23,6 +23,7 @@ public class EmbeddedX11Service extends Service {
     private final Binder lifetime = new Binder();
     private CmdEntryPoint server;
     private java.lang.Process browser;
+    private AndroidAudioOutput audio;
     private Thread worker;
     private volatile boolean stopping;
 
@@ -75,7 +76,15 @@ public class EmbeddedX11Service extends Service {
             final java.lang.Process running;
             synchronized (this) {
                 if (stopping) return;
-                browser = LinuxRuntime.startSession(this);
+                try {
+                    audio = new AndroidAudioOutput(this);
+                    audio.start();
+                } catch (Exception error) {
+                    Log.e(TAG, "Android audio receiver unavailable; starting Chrome without audio.", error);
+                    if (audio != null) audio.close();
+                    audio = null;
+                }
+                browser = LinuxRuntime.startSession(this, audio != null);
                 running = browser;
             }
             report("started", 0, "");
@@ -86,7 +95,14 @@ public class EmbeddedX11Service extends Service {
             Thread.currentThread().interrupt();
         } catch (Exception error) {
             if (!stopping) reportError(error);
+        } finally {
+            closeAudio();
         }
+    }
+
+    private synchronized void closeAudio() {
+        if (audio != null) audio.close();
+        audio = null;
     }
 
     private void reportError(Throwable error) {
@@ -111,6 +127,7 @@ public class EmbeddedX11Service extends Service {
         synchronized (this) {
             if (browser != null) browser.destroy();
         }
+        closeAudio();
         super.onDestroy();
         // Xorg owns process-global native state and cannot be restarted in this process.
         Process.killProcess(Process.myPid());
