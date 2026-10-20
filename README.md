@@ -2,6 +2,10 @@
 
 **The desktop edition of Google Chrome, running locally on Android.**
 
+> **Audio experiment — `audio-output` branch:** this branch adds a PulseAudio →
+> Android AudioTrack playback bridge. It is not yet validated on the device and
+> is separate from the frozen v0.1.0 preview below. See [audio test instructions](docs/AUDIO.md).
+
 Desktop Chrome Android packages an embedded X11 display and a Linux runtime into
 one ARM64 Android app. On first launch it installs its own Debian 13 environment
 and downloads the official Linux ARM64 Google Chrome package from Google.
@@ -185,7 +189,7 @@ References:
 | Symptom / limitation | What to know |
 | --- | --- |
 | Chrome stops after a few minutes, often with code 137 | Check Android's system log for `Trimming phantom processes`; use the Developer option above when available. Code 137 alone does not identify the killer. |
-| No audio / ALSA errors | Audio output has not been integrated. |
+| Audio output | Experimental on the `audio-output` branch; see [audio tests](docs/AUDIO.md). The v0.1.0 release remains without audio. |
 | Graphics performance | Chrome currently uses software rendering with `--disable-gpu`. |
 | Browser sandbox | Chrome runs with `--no-sandbox` because this PRoot environment does not provide the normal Linux browser sandbox. Android's app sandbox remains a separate boundary. |
 | Startup fails | Use **Copy details** in the error dialog when reporting the problem. |
