@@ -3,7 +3,7 @@
 **The desktop edition of Google Chrome, running locally on Android.**
 
 > **Audio experiment — `audio-output` branch:** this branch adds a PulseAudio →
-> Android AudioTrack playback bridge. It is not yet validated on the device and
+> Android AudioTrack playback bridge. Its current tuning still needs device testing and
 > is separate from the frozen v0.1.0 preview below. See [audio test instructions](docs/AUDIO.md).
 
 Desktop Chrome Android packages an embedded X11 display and a Linux runtime into
