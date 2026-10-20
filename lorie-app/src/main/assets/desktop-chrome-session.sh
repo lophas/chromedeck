@@ -13,14 +13,12 @@ openbox --sm-disable &
 wm_pid=$!
 trap 'kill "$wm_pid" 2>/dev/null || true' EXIT HUP INT TERM
 # Skip the official wrapper's two persistent cat processes.
-# Reuse compatible same-site renderers and avoid idle helper processes.
+# Keep the launch options from the last successful device baseline.
 # The renderer limit is soft: site isolation can require additional processes.
 /opt/google/chrome/chrome \
     --no-sandbox \
     --no-zygote \
     --renderer-process-limit=4 \
-    --process-per-site \
-    --disable-features=SpareRendererForSitePerProcess \
     --disable-dev-shm-usage \
     --disable-gpu \
     --disable-background-mode \
