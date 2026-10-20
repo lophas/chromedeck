@@ -1,43 +1,66 @@
-name: Desktop Chrome APK
+name: Publish tested Desktop Chrome release
 
 on:
   push:
     branches: [desktop-chrome]
-    paths-ignore: ['**.md']
+    paths: [release.json]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: desktop-chrome-apk
+  group: desktop-chrome-release
   cancel-in-progress: false
 
 jobs:
-  apk:
+  publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
-          submodules: recursive
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: android-actions/setup-android@v3
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bison flex gawk xkb-data
-          sdkmanager "platforms;android-34" "build-tools;36.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
-      - name: Build standalone APK
-        run: ./gradlew :lorie-app:assembleStandaloneDebug --console=plain --stacktrace
-      - name: Publish APK
+          fetch-depth: 0
+      - name: Verify and publish the tested APK
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          tag="chrome-build-${GITHUB_RUN_NUMBER}"
-          apk="lorie-app/build/outputs/apk/standalone/debug/desktop-chrome-debug.apk"
-          sha256sum "$apk" > "$apk.sha256"
-          gh release create "$tag" "$apk" "$apk.sha256" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desktop Chrome Android - build ${GITHUB_RUN_NUMBER}" --prerelease --notes "Built from $GITHUB_SHA. Restores the launch flags from the last successful baseline; device validation is still required."
+          set -euo pipefail
+          tag=$(jq -er '.tag' release.json)
+          title=$(jq -er '.title' release.json)
+          source_release=$(jq -er '.source_release' release.json)
+          source_commit=$(jq -er '.source_commit' release.json)
+          asset=$(jq -er '.asset' release.json)
+          checksum=$(jq -er '.sha256' release.json)
+
+          # Only documentation and publication metadata may differ from the
+          # source that produced the device-tested APK.
+          git diff --exit-code "$source_commit" "$GITHUB_SHA" -- . \
+            ':!README.md' ':!RELEASE_NOTES.md' ':!release.json' \
+            ':!docs/TESTING.md' ':!.github/workflows/desktop-chrome-apk.yml'
+
+          source_tag_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$source_release" --jq '.object.sha')
+          test "$source_tag_commit" = "$source_commit"
+          mkdir -p artifacts
+          gh release download "$source_release" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir artifacts
+          printf '%s  %s\n' "$checksum" "artifacts/$asset" | sha256sum --check
+          unzip -t "artifacts/$asset"
+          cp release.json artifacts/release.json
+          (cd artifacts && sha256sum "$asset" > SHA256SUMS)
+
+          # Retrying publication never replaces an existing release or asset.
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir -p existing
+            test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')" = "$GITHUB_SHA"
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir existing
+            printf '%s  %s\n' "$checksum" "existing/$asset" | sha256sum --check
+            exit 0
+          fi
+          release_flags=()
+          if test "$(jq -r '.prerelease' release.json)" = true; then
+            release_flags+=(--prerelease)
+          fi
+          gh release create "$tag" "artifacts/$asset" artifacts/SHA256SUMS artifacts/release.json \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$title" --notes-file RELEASE_NOTES.md "${release_flags[@]}"
