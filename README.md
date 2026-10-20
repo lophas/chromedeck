@@ -38,8 +38,17 @@ five-minute time series.
 The current launcher starts the Chrome binary directly (avoiding two wrapper
 `cat` processes), uses `--no-zygote`, and requests
 `--renderer-process-limit=4`. The renderer limit is soft and does not cap all
-browser children or other apps' children. These changes require device validation
-and do not guarantee immunity from system process trimming.
+browser children or other apps' children and does not guarantee immunity from
+system process trimming.
+
+A five-minute device test of `chrome-test-005` on 2026-10-20 completed successfully
+(140 samples, 14:15:37-14:20:35 local time). The global monitor override was absent
+and the configured phantom-process limit was 32. No Chrome termination or phantom
+trimming appeared in the captured events. The Android-tracked global child-process
+count reached 32. Raw app-native process counts reached 39 briefly during startup;
+the final count was 28, including 15 renderers, 6 of which were extension renderers.
+The renderer peak was 20. This is evidence of improved stability in that session,
+not a hard process-count bound or proof of long-running stability.
 
 The app does not change the system child-process monitor. To measure on a connected
 computer with ADB, run:
