@@ -29,7 +29,9 @@ Current prototype limits:
 
 ## Extra key bar
 
-- Three-finger swipe down toggles the extra key bar (the default gesture).
+- Three-finger swipe down toggles the extra key bar (the upstream default gesture).
+  On devices where this triggers a system screenshot, use Preferences > Other >
+  Configure response to user actions > Volume down > toggle additional key bar.
 - Preferences > Keyboard > Show additional keyboard enables or disables it.
 - Hide extra key bar with external keyboard is enabled by default. It hides the
   bar when Android detects an external alphabetic keyboard, including USB and
@@ -66,6 +68,29 @@ count reached 32. Raw app-native process counts reached 39 briefly during startu
 the final count was 28, including 15 renderers, 6 of which were extension renderers.
 The renderer peak was 20. This is evidence of improved stability in that session,
 not a hard process-count bound or proof of long-running stability.
+
+A later `chrome-test-006` session was terminated after about eight and a half
+minutes: Android logged `Trimming phantom processes` for `libproot.so` at
+14:42:28.979. The five-minute pass therefore did not establish long-term stability.
+
+The next experimental launch also requests `--process-per-site`, disables the
+`SpareRendererForSitePerProcess` feature, and uses
+`--disable-crashpad-for-testing`. These target same-site process reuse, spare
+renderers and the two observed Crashpad helper processes. Crashpad minidumps are
+unavailable in this test; Android and browser text logs remain available. The
+effect on process counts and browsing behavior still needs device validation.
+These options do not impose a hard total process cap.
+
+For a longer measurement:
+
+```bash
+MEASURE_SECONDS=900 bash scripts/measure-android-processes.sh
+```
+
+Source references:
+[process model](https://chromium.googlesource.com/chromium/src/+/main/docs/process_model_and_site_isolation.md),
+[spare renderer feature](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/public/common/content_features.cc),
+[Crashpad initialization](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/app/chrome_main_delegate.cc).
 
 The app does not change the system child-process monitor. To measure on a connected
 computer with ADB, run:
