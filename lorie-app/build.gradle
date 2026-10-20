@@ -83,3 +83,16 @@ tasks.matching { it.name == 'assembleDebug' }.configureEach { dependsOn ':shell-
 dependencies {
     implementation project(':lorie')
 }
+
+
+// Bundle keyboard data so startup never depends on a separate Termux installation.
+def embeddedX11Assets = layout.buildDirectory.dir("generated/embeddedX11Assets")
+android.sourceSets.main.assets.srcDir(embeddedX11Assets)
+tasks.register("prepareEmbeddedX11Assets", Exec) {
+    inputs.dir("/usr/share/X11/xkb")
+    inputs.file(rootProject.file("scripts/prepare-xkb-assets.py"))
+    outputs.dir(embeddedX11Assets)
+    commandLine "python3", rootProject.file("scripts/prepare-xkb-assets.py").absolutePath,
+            "/usr/share/X11/xkb", embeddedX11Assets.get().asFile.absolutePath
+}
+tasks.named("preBuild").configure { dependsOn "prepareEmbeddedX11Assets" }
