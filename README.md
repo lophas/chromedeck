@@ -27,6 +27,23 @@ Current prototype limits:
   installers may show an old-target warning.
 - Development APKs currently use the upstream public debug signing key.
 
+## Extra key bar
+
+- Three-finger swipe down toggles the extra key bar (the default gesture).
+- Preferences > Keyboard > Show additional keyboard enables or disables it.
+- Hide extra key bar with external keyboard is enabled by default. It hides the
+  bar when Android detects an external alphabetic keyboard, including USB and
+  Bluetooth keyboards, and restores the saved manual visibility on disconnect.
+- A manual toggle can reveal the bar while the keyboard remains connected. In
+  this auto-hide mode the bar overlays the desktop, even when the normal
+  Prevent extra keys bar from covering the display setting is enabled. Revealing
+  or hiding it does not change the desktop content insets.
+- The manual override lasts until the keyboard connection or the auto-hide
+  preference changes. A manually hidden bar stays hidden on disconnect.
+- Preferences can still be opened through the Android notification while the bar
+  is hidden. Software keyboard behavior is controlled separately by Show IME with
+  external keyboard.
+
 ## Android child-process limits
 
 Android can terminate native child processes with the reason

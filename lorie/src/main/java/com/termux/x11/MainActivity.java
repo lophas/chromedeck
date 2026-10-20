@@ -101,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
     private DisplayManager displayManager;
     private boolean showIMEWhileExternalConnected = true;
     private boolean externalKeyboardConnected = false;
+    // A manual toggle can override auto-hide until the hardware connection changes.
+    private Boolean hardwareExtraKeysOverride = null;
     private View.OnKeyListener mLorieKeyListener;
     private boolean filterOutWinKey = false;
     boolean useTermuxEKBarBehaviour = false;
@@ -754,6 +756,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void onPreferencesChanged(String key) {
+        if ("hideAdditionalKbdWithExternalKeyboard".equals(key)
+                || "showAdditionalKbd".equals(key))
+            hardwareExtraKeysOverride = null;
         if ("additionalKbdVisible".equals(key))
             return;
 
@@ -796,7 +801,7 @@ public class MainActivity extends AppCompatActivity {
         showMouseAuxButtons(prefs.showMouseHelper.get());
         showStylusAuxButtons(prefs.showStylusClickOverride.get());
 
-        getTerminalToolbarViewPager().setAlpha(isInPictureInPictureMode ? 0.f : prefs.adjustHeightForEK.get() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
+        getTerminalToolbarViewPager().setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
 
         lorieView.requestLayout();
         lorieView.invalidate();
@@ -844,11 +849,24 @@ public class MainActivity extends AppCompatActivity {
     private final X11ToolbarViewPager.PageAdapter mPageAdapter =
             new X11ToolbarViewPager.PageAdapter(this, (v, k, e) -> mInputHandler.sendKeyEvent(e));
     private final X11ToolbarViewPager.OnPageChangeListener mOnPageListener = new X11ToolbarViewPager.OnPageChangeListener(this);
+    private boolean extraKeysReserveSpace() {
+        // A temporarily revealed auto-hidden bar floats over the desktop.
+        return prefs.adjustHeightForEK.get()
+                && !(externalKeyboardConnected && prefs.hideAdditionalKbdWithExternalKeyboard.get());
+    }
+
     private void setTerminalToolbarView() {
         final ViewPager pager = getTerminalToolbarViewPager();
         ViewGroup parent = (ViewGroup) pager.getParent();
+        pager.setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace()
+                ? 1.f : ((float) prefs.opacityEKBar.get()) / 100);
 
-        boolean showNow = !isInPictureInPictureMode && getLorieView().connected() && prefs.showAdditionalKbd.get() && prefs.additionalKbdVisible.get();
+        boolean hideForHardwareKeyboard = externalKeyboardConnected
+                && prefs.hideAdditionalKbdWithExternalKeyboard.get()
+                && !Boolean.TRUE.equals(hardwareExtraKeysOverride);
+        boolean showNow = !isInPictureInPictureMode && getLorieView().connected()
+                && prefs.showAdditionalKbd.get() && prefs.additionalKbdVisible.get()
+                && !hideForHardwareKeyboard;
 
         pager.setVisibility(showNow ? View.VISIBLE : View.INVISIBLE);
 
@@ -917,7 +935,7 @@ public class MainActivity extends AppCompatActivity {
             }
             pager.setLayoutParams(layoutParams);
 
-            ekbarContentInset = prefs.adjustHeightForEK.get() && showNow ? layoutParams.height : 0;
+            ekbarContentInset = extraKeysReserveSpace() && showNow ? layoutParams.height : 0;
             applyContentInsets();
             makeSureHelpersAreVisibleAndInScreenBounds();
         });
@@ -962,8 +980,11 @@ public class MainActivity extends AppCompatActivity {
     public void toggleExtraKeys(boolean visible, boolean saveState) {
         boolean enabled = prefs.showAdditionalKbd.get();
 
-        if (enabled && getLorieView().connected() && saveState)
+        if (enabled && getLorieView().connected() && saveState) {
             prefs.additionalKbdVisible.put(visible);
+            if (externalKeyboardConnected && prefs.hideAdditionalKbdWithExternalKeyboard.get())
+                hardwareExtraKeysOverride = visible;
+        }
 
         setTerminalToolbarView();
     }
@@ -1202,7 +1223,7 @@ public class MainActivity extends AppCompatActivity {
         this.isInPictureInPictureMode = isInPictureInPictureMode;
         getLorieView().onPictureInPictureModeChanged(isInPictureInPictureMode);
         final ViewPager pager = getTerminalToolbarViewPager();
-        pager.setAlpha(isInPictureInPictureMode ? 0.f : prefs.adjustHeightForEK.get() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
+        pager.setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
         findViewById(R.id.mouse_buttons).setAlpha(isInPictureInPictureMode ? 0.f : 0.7f);
         findViewById(R.id.mouse_helper_visibility).setAlpha(isInPictureInPictureMode ? 0.f : 1.f);
         setTerminalToolbarView();
@@ -1272,12 +1293,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setExternalKeyboardConnected(boolean connected) {
+        boolean connectionChanged = externalKeyboardConnected != connected;
         externalKeyboardConnected = connected;
+        if (connectionChanged)
+            hardwareExtraKeysOverride = null;
         EditText textInput = findViewById(R.id.terminal_toolbar_text_input);
         if (textInput != null)
             textInput.setShowSoftInputOnFocus(!connected || showIMEWhileExternalConnected);
         if (connected && !showIMEWhileExternalConnected)
             getLorieView().setKeyboardVisible(false);
+        // Device discovery also runs inside TouchInputHandler's constructor.
+        // Wait for its assignment before updating adapters and display insets.
+        if (connectionChanged && mInputHandler != null)
+            setTerminalToolbarView();
         getLorieView().requestFocus();
     }
 
