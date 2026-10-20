@@ -54,6 +54,20 @@ if [[ ! -d "$PROOT_SRC" ]]; then
     unzip -q "$WORK/downloads/proot-$PROOT_VERSION.zip" -d "$WORK"
 fi
 
+# PRoot v5.1.107.96 uses string functions here without including their header.
+python3 - "$PROOT_SRC/src/extension/ashmem_memfd/ashmem_memfd.c" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+source = path.read_text()
+if "#include <string.h>" not in source:
+    marker = "#include <stdlib.h>"
+    if marker not in source:
+        raise SystemExit("Unexpected PRoot ashmem_memfd.c layout")
+    path.write_text(source.replace(marker, marker + "\n#include <string.h>", 1))
+PY
+
 if [[ ! -f "$STATIC_ROOT/lib/libtalloc.a" ]]; then
     mkdir -p "$WORK/tool-shims"
     printf '#!/bin/sh\nexit 1\n' > "$WORK/tool-shims/pkg-config"
