@@ -117,6 +117,13 @@ fi
 
 (
     cd "$PROOT_SRC/src"
+    if ! command -v gawk >/dev/null 2>&1; then
+        echo "Missing GNU awk. Install it with: apt-get install gawk" >&2
+        exit 1
+    fi
+    mkdir -p "$WORK/proot-tool-shims"
+    ln -sf "$(command -v gawk)" "$WORK/proot-tool-shims/awk"
+    export PATH="$WORK/proot-tool-shims:$PATH"
     export CFLAGS="-I$STATIC_ROOT/include -Werror=implicit-function-declaration"
     export CPPFLAGS="-DARG_MAX=131072"
     export LDFLAGS="-static -L$STATIC_ROOT/lib -Wl,-z,noexecstack -Wl,-z,max-page-size=16384"
