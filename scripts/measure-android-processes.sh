@@ -43,7 +43,7 @@ adb logcat -b all -v threadtime -T 1 -s ActivityManager:I DesktopChrome:V lmkd:V
 log_pid=$!
 
 adb shell -n am start -n "$pkg/com.termux.x11.MainActivity" >/dev/null
-printf 'time,app_processes,native_processes,renderers,zygotes\n' > "$out/counts.csv"
+printf 'time,app_processes,native_processes,renderers,extension_renderers,gpu_processes\n' > "$out/counts.csv"
 echo "Recording for about 5 minutes. Use Chrome on the phone."
 
 sample=0
@@ -55,10 +55,13 @@ while (( SECONDS - started < 300 )); do
         NR>1 {
             total++
             if (index($5,pkg)!=1) native++
-            if ($0 ~ /--type=renderer([[:space:]]|$)/) renderer++
-            if ($0 ~ /--type=zygote([[:space:]]|$)/) zygote++
+            if ($0 ~ /--type=renderer([[:space:]]|$)/ || $0 ~ /--renderer-client-id=/) {
+                renderer++
+                if ($0 ~ /--extension-process([[:space:]]|$)/) extension++
+            }
+            if ($0 ~ /--type=gpu-process([[:space:]]|$)/ || $0 ~ /--gpu-preferences=/) gpu++
         }
-        END {printf "%s,%d,%d,%d,%d\n",t,total,native,renderer,zygote}
+        END {printf "%s,%d,%d,%d,%d,%d\n",t,total,native,renderer,extension,gpu}
     ' "$out/current-processes.txt" | tee -a "$out/counts.csv"
     {
         printf '\n=== %s ===\n' "$stamp"
