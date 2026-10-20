@@ -3,6 +3,12 @@
 # Baseline measurement on the host computer; no APK changes required.
 set -euo pipefail
 
+duration="${MEASURE_SECONDS:-300}"
+if [[ ! "$duration" =~ ^[1-9][0-9]*$ ]]; then
+    echo "MEASURE_SECONDS must be a positive integer."
+    exit 1
+fi
+
 pkg="hu.lophas.desktopchromeandroid"
 out="desktop-chrome-baseline-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
@@ -39,21 +45,23 @@ if [[ ! "$app_uid" =~ ^[0-9]+$ ]]; then
 fi
 
 adb shell -n dumpsys activity settings > "$out/activity-settings.txt"
+adb shell -n dumpsys package "$pkg" | awk '/versionCode=|versionName=/ {print}' > "$out/app-version.txt"
 adb logcat -b all -v threadtime -T 1 -s ActivityManager:I DesktopChrome:V lmkd:V am_kill:I am_proc_died:I > "$out/events.txt" 2>&1 </dev/null &
 log_pid=$!
 
 adb shell -n am start -n "$pkg/com.termux.x11.MainActivity" >/dev/null
-printf 'time,app_processes,native_processes,renderers,extension_renderers,gpu_processes\n' > "$out/counts.csv"
-echo "Recording for about 5 minutes. Use Chrome on the phone."
+printf 'time,app_processes,native_processes,renderers,extension_renderers,gpu_processes,crashpad_handlers\n' > "$out/counts.csv"
+echo "Recording for $duration seconds. Use Chrome on the phone."
 
 sample=0
 started=$SECONDS
-while (( SECONDS - started < 300 )); do
+while (( SECONDS - started < duration )); do
     stamp="$(date +%H:%M:%S)"
     adb shell -n ps -A -o UID,PID,PPID,NAME,ARGS | tr -d '\r' | awk -v uid="$app_uid" 'NR==1 || $1==uid' > "$out/current-processes.txt"
     awk -v t="$stamp" -v pkg="$pkg" '
         NR>1 {
             total++
+            if ($4 == "chrome_crashpad_handler") crashpad++
             if (index($5,pkg)!=1) native++
             if ($0 ~ /--type=renderer([[:space:]]|$)/ || $0 ~ /--renderer-client-id=/) {
                 renderer++
@@ -61,7 +69,7 @@ while (( SECONDS - started < 300 )); do
             }
             if ($0 ~ /--type=gpu-process([[:space:]]|$)/ || $0 ~ /--gpu-preferences=/) gpu++
         }
-        END {printf "%s,%d,%d,%d,%d,%d\n",t,total,native,renderer,extension,gpu}
+        END {printf "%s,%d,%d,%d,%d,%d,%d\n",t,total,native,renderer,extension,gpu,crashpad}
     ' "$out/current-processes.txt" | tee -a "$out/counts.csv"
     {
         printf '\n=== %s ===\n' "$stamp"
