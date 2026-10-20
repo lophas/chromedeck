@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "image_version": 1,
+  "architecture": "arm64",
+  "distribution": "Debian 13 (trixie)",
+  "image_url": "https://github.com/lophas/desktop-chrome-android/releases/download/debian-runtime-v1/debian-runtime-v1-arm64.tar.gz",
+  "image_sha256": "d201bf82df0f61355b23b2da783d8b4569af041c5c214e833e19510a14eb0418",
+  "image_size": 240550275,
+  "unpacked_size": 619336508,
+  "base_source_commit": "cf1f4a45447842b45e9952e0f018ae734a7341c7",
+  "chrome": {
+    "package": "google-chrome-stable",
+    "version": "155.0.8059.84-1",
+    "url": "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_155.0.8059.84-1_arm64.deb",
+    "sha256": "f98fcc80da576811e3212c87f53e01a367a1d05d7f7c33a013398a82a04bb00f"
+  }
+}
