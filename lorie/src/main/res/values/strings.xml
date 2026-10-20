@@ -127,4 +127,6 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_summary_requiresTrackpadAndNative">Requires "Touchscreen input mode" to be "Trackpad" and "Display resolution mode" to be not "native"</string>
     <string name="lorie_pref_summary_screenIdleTimeoutConflict">⚠️ System screen timeout (%s) is longer and takes priority</string>
     <string name="lorie_pref_screenIdleTimeoutSystem">System (%s)</string>
+    <string name="lorie_pref_hideAdditionalKbdWithExternalKeyboard">Hide extra key bar with external keyboard</string>
+    <string name="lorie_pref_hideAdditionalKbdWithExternalKeyboard_summary">Automatically hide the bar with a hardware keyboard. Three-finger swipe down reveals it over the desktop without resizing it.</string>
 </resources>

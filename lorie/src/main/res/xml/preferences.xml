@@ -40,6 +40,11 @@
     </PreferenceScreen>
     <PreferenceScreen app:key="kbd">
         <SwitchPreferenceCompat app:key="showAdditionalKbd" app:defaultValue="true" />
+        <SwitchPreferenceCompat app:key="hideAdditionalKbdWithExternalKeyboard"
+            app:defaultValue="true"
+            app:title="@string/lorie_pref_hideAdditionalKbdWithExternalKeyboard"
+            app:summary="@string/lorie_pref_hideAdditionalKbdWithExternalKeyboard_summary"
+            app:dependency="showAdditionalKbd" />
         <!-- this preference should be a part of `Prefs` but should not appear in PreferenceScreen -->
         <SwitchPreferenceCompat app:key="additionalKbdVisible" app:defaultValue="true" app:isPreferenceVisible="false" />
         <SwitchPreferenceCompat app:key="showIMEWhileExternalConnected" app:defaultValue="true" />
