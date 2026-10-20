@@ -1,0 +1,42 @@
+name: Desktop Chrome APK
+
+on:
+  push:
+    branches: [desktop-chrome]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-chrome-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex gawk xkb-data
+          sdkmanager "platforms;android-34" "build-tools;36.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
+      - name: Build standalone APK
+        run: ./gradlew :lorie-app:assembleStandaloneDebug --console=plain --stacktrace
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="chrome-build-${GITHUB_RUN_NUMBER}"
+          apk="lorie-app/build/outputs/apk/standalone/debug/desktop-chrome-debug.apk"
+          sha256sum "$apk" > "$apk.sha256"
+          gh release create "$tag" "$apk" "$apk.sha256" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Desktop Chrome Android - build ${GITHUB_RUN_NUMBER}" --prerelease --notes "Built from $GITHUB_SHA. Restores the launch flags from the last successful baseline; device validation is still required."
