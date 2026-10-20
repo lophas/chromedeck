@@ -23,14 +23,15 @@ abstract class VerifySharedUidProcess extends DefaultTask {
 
 android {
     namespace 'com.termux.x11.app'
+    packagingOptions.jniLibs.useLegacyPackaging true
     compileSdkVersion 34
     ndkVersion termuxX11NdkVersion
     defaultConfig {
         ndk { abiFilters "arm64-v8a" }
         applicationId "hu.lophas.desktopchromeandroid"
         minSdkVersion 24
-        targetSdkVersion 34
-        versionCode 15
+        targetSdkVersion 28
+        versionCode 16
         versionName termuxX11VersionName
     }
 
@@ -97,3 +98,19 @@ tasks.register("prepareEmbeddedX11Assets", Exec) {
             "/usr/share/X11/xkb", embeddedX11Assets.get().asFile.absolutePath
 }
 tasks.named("preBuild").configure { dependsOn "prepareEmbeddedX11Assets" }
+
+
+// Executables live in the installer-managed native directory, under their .so APK names.
+def prootJniLibs = layout.buildDirectory.dir("generated/prootJniLibs")
+def prootAssets = layout.buildDirectory.dir("generated/prootAssets")
+android.sourceSets.main.jniLibs.srcDir(prootJniLibs.get().asFile)
+android.sourceSets.main.assets.srcDir(prootAssets.get().asFile)
+tasks.register("prepareNativeRuntime", Exec) {
+    inputs.file(rootProject.file("scripts/build-native-runtime.sh"))
+    inputs.property("runtimeAbi", "arm64-v8a")
+    outputs.dir(prootJniLibs)
+    outputs.dir(prootAssets)
+    workingDir rootProject.projectDir
+    commandLine "bash", rootProject.file("scripts/build-native-runtime.sh").absolutePath
+}
+tasks.named("preBuild").configure { dependsOn "prepareNativeRuntime" }
