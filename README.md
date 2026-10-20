@@ -73,13 +73,16 @@ A later `chrome-test-006` session was terminated after about eight and a half
 minutes: Android logged `Trimming phantom processes` for `libproot.so` at
 14:42:28.979. The five-minute pass therefore did not establish long-term stability.
 
-The next experimental launch also requests `--process-per-site`, disables the
-`SpareRendererForSitePerProcess` feature, and uses
-`--disable-crashpad-for-testing`. These target same-site process reuse, spare
-renderers and the two observed Crashpad helper processes. Crashpad minidumps are
-unavailable in this test; Android and browser text logs remain available. The
-effect on process counts and browsing behavior still needs device validation.
-These options do not impose a hard total process cap.
+The current experimental launcher requests `--process-per-site` and disables the
+`SpareRendererForSitePerProcess` feature to test same-site process reuse and fewer
+spare renderers. These options do not impose a hard total process cap.
+
+`chrome-test-007` also disabled Crashpad initialization, but failed immediately on
+the device with repeated FD ownership violations, GPU/network child crashes, and
+exit code 133. The next test restores Crashpad while retaining the two renderer
+options, to isolate the suspected regression. This is separate from the earlier
+Android phantom-process termination (exit code 137). Startup recovery and process
+counts still require device validation.
 
 For a longer measurement:
 

@@ -14,7 +14,6 @@ wm_pid=$!
 trap 'kill "$wm_pid" 2>/dev/null || true' EXIT HUP INT TERM
 # Skip the official wrapper's two persistent cat processes.
 # Reuse compatible same-site renderers and avoid idle helper processes.
-# Crashpad dumps are disabled for this process-budget test; session logs remain.
 # The renderer limit is soft: site isolation can require additional processes.
 /opt/google/chrome/chrome \
     --no-sandbox \
@@ -22,7 +21,6 @@ trap 'kill "$wm_pid" 2>/dev/null || true' EXIT HUP INT TERM
     --renderer-process-limit=4 \
     --process-per-site \
     --disable-features=SpareRendererForSitePerProcess \
-    --disable-crashpad-for-testing \
     --disable-dev-shm-usage \
     --disable-gpu \
     --disable-background-mode \
