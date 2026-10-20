@@ -4,7 +4,6 @@ package com.termux.x11;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
-import android.os.SystemClock;
 import java.io.*;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -68,10 +67,7 @@ public final class LinuxRuntime {
         config.append("options timeout:2 attempts:2\n");
         File resolv = new File(rootfs(context), "etc/resolv.conf");
         // Replace the directory entry itself, never follow an absolute guest symlink.
-        try { android.system.Os.unlink(resolv.getAbsolutePath()); }
-        catch (android.system.ErrnoException e) {
-            if (e.errno != android.system.OsConstants.ENOENT) throw e;
-        }
+        java.nio.file.Files.deleteIfExists(resolv.toPath());
         writeText(resolv, config.toString());
     }
 
