@@ -12,8 +12,9 @@ inside its own Debian 13 environment, with an embedded Termux:X11 display server
 
 ## Development status
 
-The embedded X11 display and PRoot smoke test have been verified on Android 16.
-The Debian installer and desktop Chrome startup are ready for device validation.
+The embedded X11 display, PRoot, Debian installer, official desktop Chrome, extensions,
+and on-screen keyboard have been verified on Android 16. Long-running stability with
+Android's default child-process limit is under investigation.
 
 Current prototype limits:
 
@@ -25,6 +26,34 @@ Current prototype limits:
 - Target SDK 28 is used for Linux executable compatibility; newer Android
   installers may show an old-target warning.
 - Development APKs currently use the upstream public debug signing key.
+
+## Android child-process limits
+
+Android can terminate native child processes with the reason
+`Trimming phantom processes`. On the tested Vivo, the configured shared limit is 32.
+A baseline snapshot contained 23 native children for this app. The partial baseline
+recording confirmed a subsequent PRoot/session termination; it was not a complete
+five-minute time series.
+
+The current launcher starts the Chrome binary directly (avoiding two wrapper
+`cat` processes), uses `--no-zygote`, and requests
+`--renderer-process-limit=4`. The renderer limit is soft and does not cap all
+browser children or other apps' children. These changes require device validation
+and do not guarantee immunity from system process trimming.
+
+The app does not change the system child-process monitor. To measure on a connected
+computer with ADB, run:
+
+```bash
+bash scripts/measure-android-processes.sh
+```
+
+The measurement script removes the previously used global monitor override to
+restore the system default, records process snapshots and Android trimming events,
+and saves a ZIP in the current directory, including partial data if it stops early.
+Renderer classification also checks `--renderer-client-id`, since Chrome may
+rewrite its visible command line and omit `--type`. Extension renderer counts
+are a subset of all renderers.
 
 ## Build the APK
 

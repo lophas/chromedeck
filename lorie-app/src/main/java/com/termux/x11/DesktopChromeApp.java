@@ -222,11 +222,15 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
                 .setNegativeButton("Close", (dialog, which) -> {
                     for (MainActivity window : MainActivity.getInstances()) window.finish();
                 })
-                .setNeutralButton("Copy details", (dialog, which) -> {
-                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Desktop Chrome Android", details));
-                    Toast.makeText(this, "Details copied", Toast.LENGTH_SHORT).show();
-                }).show();
+                .setNeutralButton("Copy details", null)
+                .setCancelable(false)
+                .show();
+        // Keep Retry visible after copying the diagnostic report.
+        errorDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            clipboard.setPrimaryClip(ClipData.newPlainText("Desktop Chrome Android", details));
+            Toast.makeText(this, "Details copied", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void releaseServer() {
