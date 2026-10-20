@@ -10,7 +10,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
-/** Preserve Unix links and modes without ever writing through archive-created symlinks. */
+/** Preserve Unix modes and symlinks; copy hard-link contents if Android forbids linking. */
 public final class RootfsArchive {
     private RootfsArchive() {}
     public interface Progress { void update(long bytes); }
@@ -76,6 +76,7 @@ public final class RootfsArchive {
             }
         }
 
+        boolean canCreateHardLinks = true;
         while (!hardLinks.isEmpty()) {
             boolean changed = false;
             Iterator<Link> iterator = hardLinks.iterator();
@@ -85,7 +86,31 @@ public final class RootfsArchive {
                 File output = safe(root, link.name);
                 if (!source.isFile()) continue;
                 mkdir(output.getParentFile());
-                Os.link(source.getAbsolutePath(), output.getAbsolutePath());
+                // Android SELinux policies may forbid hard links even inside app storage.
+                boolean linked = false;
+                if (canCreateHardLinks) {
+                    try {
+                        Os.link(source.getAbsolutePath(), output.getAbsolutePath());
+                        linked = true;
+                    } catch (ErrnoException e) {
+                        if (e.errno != OsConstants.EACCES && e.errno != OsConstants.EPERM
+                                && e.errno != OsConstants.EXDEV && e.errno != OsConstants.EOPNOTSUPP
+                                && e.errno != OsConstants.ENOSYS)
+                            throw new IOException("Cannot create archive hard link: "
+                                    + link.name + " -> " + link.target, e);
+                        canCreateHardLinks = false;
+                    }
+                }
+                if (!linked) {
+                    long size = source.length();
+                    if (size > limit - total)
+                        throw new IOException("Debian archive exceeds its expected installed size.");
+                    java.nio.file.Files.copy(source.toPath(), output.toPath());
+                    Os.chmod(output.getAbsolutePath(), Os.stat(source.getAbsolutePath()).st_mode & 0777);
+                    output.setLastModified(source.lastModified());
+                    total += size;
+                    progress.update(total);
+                }
                 iterator.remove();
                 changed = true;
             }
