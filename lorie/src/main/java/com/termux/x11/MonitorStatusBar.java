@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.BatteryManager;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.Date;
@@ -38,24 +39,32 @@ public class MonitorStatusBar extends TextView {
 
     public MonitorStatusBar(Context context) {
         super(context);
-        float dp = getResources().getDisplayMetrics().density;
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(0xFF202124);
-        background.setCornerRadii(new float[] { 0, 0, 0, 0, 0, 0, 10 * dp, 10 * dp });
-        setBackground(background);
         setTextColor(0xFFBDBDBD);
         setTypeface(Typeface.DEFAULT_BOLD);
-        setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         setGravity(Gravity.CENTER);
-        // Wide enough to cover the minimize, maximize and close buttons.
-        setMinWidth((int) (96 * dp));
-        setPadding((int) (12 * dp), 0, (int) (12 * dp), 0);
         setFocusable(false);
     }
 
-    /** Height in pixels of the display it is shown on, matching Chrome's tab strip. */
-    public static int height(Context context) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 37, context.getResources().getDisplayMetrics());
+    /**
+     * Sets the height in dp of the display it is shown on; the text and the width follow,
+     * so that it still covers Chrome's window buttons at another display scale.
+     */
+    public void setHeightDp(int heightDp) {
+        float dp = getResources().getDisplayMetrics().density;
+        float s = heightDp / 37f;
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xFF202124);
+        background.setCornerRadii(new float[] { 0, 0, 0, 0, 0, 0, 10 * s * dp, 10 * s * dp });
+        setBackground(background);
+        setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13 * s);
+        // Wide enough to cover the minimize, maximize and close buttons.
+        setMinWidth((int) (96 * s * dp));
+        setPadding((int) (12 * s * dp), 0, (int) (12 * s * dp), 0);
+        ViewGroup.LayoutParams lp = getLayoutParams();
+        if (lp != null && lp.height != (int) (heightDp * dp)) {
+            lp.height = (int) (heightDp * dp);
+            setLayoutParams(lp);
+        }
     }
 
     @Override protected void onAttachedToWindow() {

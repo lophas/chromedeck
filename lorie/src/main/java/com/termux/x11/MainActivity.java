@@ -1427,7 +1427,7 @@ public class MainActivity extends AppCompatActivity {
             view.movingBetweenWindows = false;
             monitorStatusBar = new MonitorStatusBar(presentation.getContext());
             container.addView(monitorStatusBar, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                    MonitorStatusBar.height(presentation.getContext()), Gravity.TOP | Gravity.END));
+                    ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END));
             applyMonitorStatusBar();
             presentation.setContentView(container);
             presentation.show();
@@ -1477,8 +1477,10 @@ public class MainActivity extends AppCompatActivity {
 
     /** Shows or hides the battery and clock box on the monitor. */
     private void applyMonitorStatusBar() {
-        if (monitorStatusBar != null)
-            monitorStatusBar.setVisibility(prefs.monitorStatusBar.get() ? View.VISIBLE : View.GONE);
+        if (monitorStatusBar == null)
+            return;
+        monitorStatusBar.setVisibility(prefs.monitorStatusBar.get() ? View.VISIBLE : View.GONE);
+        monitorStatusBar.setHeightDp(prefs.monitorStatusBarHeight.get());
     }
 
     public boolean isPresenting() {
