@@ -26,6 +26,8 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Automatic Chrome updates** from Google's signed package repository.
 - **Smooth video:** fast PRoot system calls let Chrome play 1080p60 video on the
   test phone with software decoding.
+- **Battery-friendly rendering:** a 30 fps default frame rate, adjustable in the
+  app's settings.
 - **Audio playback** through Android's media output.
 - **Persistent profile:** settings, sign-ins and extensions survive restarts and
   app updates, and the last session's tabs reopen when the app starts again.
@@ -95,6 +97,10 @@ adb install -r desktop-chrome-debug.apk
     updater, so before Chrome starts, at most about once a day, the app installs a
     newer `google-chrome-stable` from Google's repository. A failed check never
     blocks startup. The installed version is shown below the switch.
+  - **Frame rate** — 30 fps by default to save battery. Chrome renders in
+    software, and 30 fps uses 20–40% less CPU than the display's maximum.
+    Choose 60 fps or **Display maximum** for smoother scrolling and animation.
+    Applies after restarting the app.
 - **Tabs after a restart:** each profile starts set to Chrome's **On startup →
   Continue where you left off**, so the last session reopens without a crash
   prompt. You can change this in Chrome's settings.
@@ -131,7 +137,9 @@ Turn it off in the player's **Settings (gear) → Ambient mode**.
 Chrome renders in software (`--disable-gpu`), and WebGL is unavailable. Video is
 decoded by Chrome's software decoders; Android's hardware decoders are not
 reachable from Linux Chrome. Effects that redraw large areas every frame cost
-CPU and battery. Details: [video and GPU notes](docs/GPU-VIDEO.md).
+CPU and battery. At the default 30 fps, 60 fps videos show every second frame;
+choose a higher frame rate in **Preferences → Browser** if that matters.
+Details: [video and GPU notes](docs/GPU-VIDEO.md).
 
 ### Play Protect warning
 

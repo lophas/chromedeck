@@ -36,6 +36,24 @@ acceleration)** shows that state and turns acceleration off or back on; the
 change applies after restarting the app. The switch stores the same
 `files/runtime/disable-proot-seccomp` marker.
 
+## Frame rate and resolution
+
+The embedded X server reports the display's refresh rate (120 Hz on the test
+phone), and Chrome paces its drawing to it. CPU use of all app processes, in
+percent of one core, with Chrome 156 and no other tabs:
+
+| Scenario | Display maximum | 60 fps | 30 fps | 30 fps, 1080p-sized screen |
+| --- | --- | --- | --- | --- |
+| CSS animation | 90% | 80% | 54% | 48% |
+| Continuous scrolling | 129% (about 50 fps reached) | 136% | 101% | 97% |
+| 1080p60 video | 159% | 170% | 128% | 121% |
+
+Most of the cost is per frame, not per pixel: a screen with 36% fewer pixels
+saves only 5–10%. The frame rate is the effective control, so the app defaults
+to 30 fps (**Preferences → Browser → Frame rate**). The same setting asks
+Android to run the display at that rate for the app. Chrome reads the rate when
+it starts, so a change applies after restarting the app.
+
 ## Hardware video decoding
 
 Not available. Linux Chrome decodes in hardware only through VA-API or V4L2

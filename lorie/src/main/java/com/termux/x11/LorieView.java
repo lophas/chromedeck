@@ -416,6 +416,15 @@ public class LorieView extends SurfaceView implements InputStub {
     private void sendWindowChange() {
         String name;
         int framerate = (int) (getDisplay() != null ? getDisplay().getRefreshRate() : 30);
+        // X clients pace their drawing to the reported refresh rate. Chrome renders in
+        // software, so a lower cap saves CPU and battery, and Android may lower the
+        // display refresh rate for this surface. Chrome reads the rate when it starts.
+        String limit = activity.prefs.frameRateLimit.get();
+        int cap = "native".equals(limit) ? 0 : Integer.parseInt(limit);
+        if (cap > 0)
+            framerate = Math.min(framerate, cap);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && getHolder().getSurface().isValid())
+            getHolder().getSurface().setFrameRate(cap, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 
         if (getDisplay() == null || getDisplay().getDisplayId() == Display.DEFAULT_DISPLAY)
             name = "builtin";

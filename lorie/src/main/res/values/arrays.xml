@@ -74,6 +74,16 @@
         <item>3840x2160</item>
         <item>7680x4320</item>
     </string-array>
+    <string-array name="frameRateLimitEntries">
+        <item>30 fps (power saving)</item>
+        <item>60 fps</item>
+        <item>Display maximum</item>
+    </string-array>
+    <string-array name="frameRateLimitValues">
+        <item>30</item>
+        <item>60</item>
+        <item>native</item>
+    </string-array>
     <string-array name="displayFilteringVariants">
         <item>bilinear</item>
         <item>nearest</item>

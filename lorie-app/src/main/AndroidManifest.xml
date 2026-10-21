@@ -11,6 +11,12 @@
         android:theme="@style/LorieAppTheme"
         android:hardwareAccelerated="true">
         <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="false" />
+        <!-- Termux:X11 exports these for its command-line tools. This app has none, and
+             any installed app could otherwise change preferences or stop the session. -->
+        <receiver android:name="com.termux.x11.LoriePreferences$Receiver"
+            android:exported="false" tools:replace="android:exported" />
+        <receiver android:name="com.termux.x11.LorieApp$Receiver"
+            android:exported="false" tools:replace="android:exported" />
         <service
             android:name="com.termux.x11.EmbeddedX11Service"
             android:process=":xserver"

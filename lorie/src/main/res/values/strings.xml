@@ -41,6 +41,7 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_prootAcceleration_autoDisabled">Turned off automatically after Chrome failed to start with it. Turn on to try again; applies after restarting the app.</string>
     <string name="lorie_pref_chromeAutoUpdate">Update Chrome automatically</string>
     <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
+    <string name="lorie_pref_frameRateLimit">Frame rate</string>
     <string name="lorie_pref_restartToApply">Restart the app to apply this change.</string>
     <string name="lorie_pref_kbd">Keyboard</string>
     <string name="lorie_pref_other">Other</string>
