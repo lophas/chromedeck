@@ -1,6 +1,16 @@
-# ChromeDeck 0.3.2 — Preview
+# ChromeDeck 0.3.3 — Preview
 
-## New in 0.3.2
+## New in 0.3.3
+
+- **Battery and clock height:** **Preferences → Browser → Battery and clock
+  height** sets the size of the box in the monitor's corner, so that it covers
+  Chrome's window buttons at any external display scale. Changes apply at once.
+
+Install over 0.3.x without uninstalling; the browser profile is kept.
+
+## 0.3.2
+
+### New in 0.3.2
 
 - **Battery and clock on the monitor:** while Chrome is on an external display,
   its top right corner shows the phone's battery level and the time, with ⚡ while

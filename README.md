@@ -126,7 +126,8 @@ adb install -r chromedeck.apk
   together with the phone screen; the power button still puts both to sleep.
   The top right corner of the monitor shows the phone's battery level and the
   time over Chrome's window buttons; **Preferences → Browser → Battery and clock
-  on external display** turns it off.
+  on external display** turns it off, and **Battery and clock height** matches it
+  to Chrome's tab strip at another display scale.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
