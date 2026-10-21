@@ -27,7 +27,7 @@ Frames already reach the embedded X server through MIT-SHM 1.2 file
 descriptors (memfd); the X socket carried only about 11 MB during a full test,
 so frame transfer was not the bottleneck. Android's kernel has no SysV IPC.
 
-From version code 34 the browser session uses the accelerated path by default.
+The browser session uses the accelerated path by default.
 Package installation still uses the conservative path. If an accelerated
 session exits with an error within 20 seconds, the app writes
 `files/runtime/disable-proot-seccomp`, retries once without acceleration, and
@@ -43,11 +43,20 @@ devices, which the Android app sandbox does not expose. Chrome's software
 decoders (FFmpeg H.264, libvpx, dav1d) are used; with the change above they
 are sufficient for 1080p60 and usable for 1440p60 on the test phone.
 
+## YouTube Ambient mode
+
+YouTube's Ambient mode draws a blurred copy of every video frame behind the
+player. In software rendering this keeps Chrome's single-threaded compositor
+fully busy. A 1080p30 AV1 video on youtube.com dropped 13–44% of its frames
+with Ambient mode (compositor thread at about 84% of a core) and 1.2% without
+it; the AV1 decoder threads used about 7% each. VP9 instead of AV1 did not
+help (29%). Turn Ambient mode off in the player settings.
+
 ## GPU rendering status
 
-GPU rendering remains disabled. Findings from the `gpu-acceleration` branch
-(VirGL 1.3.0 server on Android with ANGLE/Vulkan or GLES, Mesa `virpipe` in
-Debian) and from direct device tests:
+GPU rendering remains disabled. Findings from earlier experiments (a VirGL 1.3.0
+server on Android with ANGLE/Vulkan or GLES, Mesa `virpipe` in Debian) and from
+direct device tests:
 
 - The VirGL server works: `glxgears` reports `virgl (Mali-G1-Ultra MC12)` at
   roughly 250–350 fps.

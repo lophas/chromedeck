@@ -1,21 +1,11 @@
-# Device validation — 2026-10-20
+# Android child-process limit measurements — 2026-10-20
 
 Device: Vivo X300, Android 16. Runtime: Debian 13 ARM64 and Google Chrome
-155.0.8059.84. These are observations from individual sessions, not a general
+155.0.8059.84 with `--no-zygote` and `--renderer-process-limit=4`, without PRoot
+acceleration. These are observations from individual sessions, not a general
 stability guarantee.
 
-## Current frozen runtime
-
-Source commit: `b0aa61e9cd4da541d9098fa06808e28709d711a0`.
-APK: `chrome-test-009`, version code 17,
-`1.03.01-b0aa61e-20.10.26`.
-
-The launcher starts Chrome's binary directly, uses `--no-zygote` and requests
-`--renderer-process-limit=4`. Crashpad remains enabled. The experimental
-`--process-per-site` and `--disable-features=SpareRendererForSitePerProcess`
-options are absent. It also uses software rendering and `--no-sandbox`.
-
-## Measurements of this runtime
+## Measurements
 
 | Session | Observation |
 | --- | --- |
@@ -40,15 +30,6 @@ sampling can lag actual process creation.
 The successful run supports reduced resource use with fewer tabs. It does not
 establish permanent stability: the later 16:52:30 event confirms that trimming
 can still terminate the same runtime.
-
-## Earlier startup regression
-
-An experimental launcher disabled Crashpad and changed renderer options.
-It failed immediately with repeated FD ownership violations, GPU / network
-process crashes and exit 133. Restoring Crashpad alone did not resolve that
-startup failure; removing the remaining experimental renderer flags restored
-successful startup in the subsequent tests. The exact FD ownership root cause
-was not established.
 
 ## Interpreting a failure
 
