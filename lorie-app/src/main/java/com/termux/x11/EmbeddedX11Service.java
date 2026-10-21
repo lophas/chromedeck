@@ -26,6 +26,9 @@ public class EmbeddedX11Service extends Service {
     private AndroidAudioOutput audio;
     private Thread worker;
     private volatile boolean stopping;
+    private static final long ACCELERATED_START_GRACE_MS = 20000;
+    private boolean lastSessionAccelerated;
+    private long lastSessionMillis;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -73,22 +76,18 @@ public class EmbeddedX11Service extends Service {
             }
             if (stopping) return;
             if (!ready) throw new IOException("The display server did not become ready.");
-            final java.lang.Process running;
-            synchronized (this) {
-                if (stopping) return;
-                try {
-                    audio = new AndroidAudioOutput(this);
-                    audio.start();
-                } catch (Exception error) {
-                    Log.e(TAG, "Android audio receiver unavailable; starting Chrome without audio.", error);
-                    if (audio != null) audio.close();
-                    audio = null;
-                }
-                browser = LinuxRuntime.startSession(this, audio != null);
-                running = browser;
+            int status = runSession();
+            if (!stopping && status != 0 && lastSessionAccelerated
+                    && lastSessionMillis < ACCELERATED_START_GRACE_MS) {
+                // An accelerated session that dies during startup is retried once
+                // without PRoot's seccomp filter, and that choice is remembered.
+                Log.w(TAG, "Accelerated session exited (" + status + ") after "
+                        + lastSessionMillis + " ms; retrying without PRoot seccomp.");
+                LinuxRuntime.writeText(LinuxRuntime.seccompOptOut(this),
+                        "Accelerated session exited with " + status + "\n");
+                closeAudio();
+                status = runSession();
             }
-            report("started", 0, "");
-            int status = running.waitFor();
             if (!stopping)
                 report("exited", status, LinuxRuntime.readTail(LinuxRuntime.log(this), 8192));
         } catch (InterruptedException interrupted) {
@@ -98,6 +97,29 @@ public class EmbeddedX11Service extends Service {
         } finally {
             closeAudio();
         }
+    }
+
+    private int runSession() throws Exception {
+        final java.lang.Process running;
+        synchronized (this) {
+            if (stopping) return 0;
+            try {
+                audio = new AndroidAudioOutput(this);
+                audio.start();
+            } catch (Exception error) {
+                Log.e(TAG, "Android audio receiver unavailable; starting Chrome without audio.", error);
+                if (audio != null) audio.close();
+                audio = null;
+            }
+            lastSessionAccelerated = LinuxRuntime.seccompEnabled(this);
+            browser = LinuxRuntime.startSession(this, audio != null);
+            running = browser;
+        }
+        long started = SystemClock.elapsedRealtime();
+        report("started", 0, "");
+        int status = running.waitFor();
+        lastSessionMillis = SystemClock.elapsedRealtime() - started;
+        return status;
     }
 
     private synchronized void closeAudio() {

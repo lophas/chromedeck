@@ -16,6 +16,9 @@ public final class LinuxRuntime {
     public static File rootfs(Context context) { return new File(context.getFilesDir(), "debian"); }
     public static File tmp(Context context) { return new File(context.getFilesDir(), "runtime/tmp"); }
     public static File log(Context context) { return new File(context.getFilesDir(), "runtime/chrome-session.log"); }
+    /** Written after a failed accelerated start; selects the conservative ptrace-only path. */
+    public static File seccompOptOut(Context context) { return new File(context.getFilesDir(), "runtime/disable-proot-seccomp"); }
+    public static boolean seccompEnabled(Context context) { return !seccompOptOut(context).exists(); }
 
     public static ProcessBuilder command(Context context, String... guestCommand) throws IOException {
         File nativeDir = new File(context.getApplicationInfo().nativeLibraryDir);
@@ -50,9 +53,10 @@ public final class LinuxRuntime {
         File loader32 = new File(nativeDir, "libproot_loader32.so");
         if (loader32.isFile())
             env.put("PROOT_LOADER_32", loader32.getAbsolutePath());
-        // Device opt-in for comparing PRoot's syscall filtering fast path with
-        // the conservative baseline. This is not Chrome's browser sandbox.
-        boolean accelerate = new File(context.getFilesDir(), "runtime/enable-proot-seccomp").isFile();
+        // PRoot's seccomp filter lets syscalls that need no path translation bypass
+        // the single ptrace tracer; without it 1080p video drops most frames.
+        // This is not Chrome's browser sandbox.
+        boolean accelerate = seccompEnabled(context);
         if (accelerate) env.remove("PROOT_NO_SECCOMP");
         else env.put("PROOT_NO_SECCOMP", "1");
         android.util.Log.i("DesktopChrome", "PRoot syscall acceleration requested=" + accelerate);
@@ -78,7 +82,11 @@ public final class LinuxRuntime {
 
     public static String runChecked(Context context, long timeoutSeconds, String... command) throws Exception {
         File report = new File(context.getFilesDir(), "runtime/setup.log");
-        Process process = command(context, command).start();
+        ProcessBuilder builder = command(context, command);
+        // Package installation keeps the conservative ptrace-only path; only the
+        // browser session needs the accelerated one.
+        builder.environment().put("PROOT_NO_SECCOMP", "1");
+        Process process = builder.start();
         ByteArrayOutputStream tail = new ByteArrayOutputStream();
         final IOException[] streamFailure = {null};
         Thread reader = new Thread(() -> {

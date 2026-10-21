@@ -190,7 +190,7 @@ References:
 | --- | --- |
 | Chrome stops after a few minutes, often with code 137 | Check Android's system log for `Trimming phantom processes`; use the Developer option above when available. Code 137 alone does not identify the killer. |
 | Audio output | Experimental on the `audio-output` branch; see [audio tests](docs/AUDIO.md). The v0.1.0 release remains without audio. |
-| Graphics performance | Chrome currently uses software rendering with `--disable-gpu`. |
+| Graphics performance | Chrome uses software rendering with `--disable-gpu`; WebGL is unavailable. Video decoding is software-only but plays 1080p60 VP9 smoothly on the test phone. See [video and GPU notes](docs/GPU-VIDEO.md). |
 | Browser sandbox | Chrome runs with `--no-sandbox` because this PRoot environment does not provide the normal Linux browser sandbox. Android's app sandbox remains a separate boundary. |
 | Startup fails | Use **Copy details** in the error dialog when reporting the problem. |
 | Empty machine-id, D-Bus or udev messages | These appear in the current environment, including successful sessions; their presence alone does not identify a crash cause. |

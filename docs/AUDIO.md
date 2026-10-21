@@ -94,36 +94,11 @@ Diagnostic command on the connected computer:
 adb logcat -b all -d -v threadtime -s DesktopChromeAudio:V DesktopChrome:V
 ```
 
-## Optional PRoot syscall acceleration comparison
+## PRoot syscall acceleration
 
-The original runtime forces `PROOT_NO_SECCOMP=1` as a compatibility precaution.
-That prevents PRoot's syscall-filtering acceleration, when compiled in and
-supported by the kernel. The default remains unchanged in this audio update.
-The effect on this phone has not been benchmarked.
-
-After testing the new buffer settings by themselves, an ADB-connected computer
-can opt this debug APK into the accelerated path for a separate comparison:
-
-```bash
-adb shell am force-stop hu.lophas.desktopchromeandroid
-adb shell run-as hu.lophas.desktopchromeandroid touch files/runtime/enable-proot-seccomp
-adb shell am start -n hu.lophas.desktopchromeandroid/com.termux.x11.MainActivity
-```
-
-This removes the forced opt-out for this app; it does not guarantee that PRoot
-actually uses filtering on every build or device. Compare the same pages and
-video with a process/CPU recording. It is PRoot syscall tracing acceleration,
-not a change to Chrome's `--no-sandbox` setting or Android's child-process switch.
-
-To return to the conservative baseline, including if the experiment fails to start:
-
-```bash
-adb shell am force-stop hu.lophas.desktopchromeandroid
-adb shell run-as hu.lophas.desktopchromeandroid rm -f files/runtime/enable-proot-seccomp
-adb shell am start -n hu.lophas.desktopchromeandroid/com.termux.x11.MainActivity
-```
-
-See [PRoot's syscall filter implementation](https://github.com/termux/proot/blob/v5.1.107.96/src/syscall/seccomp.c).
+From version code 34 the browser session uses PRoot's seccomp filter by default.
+See [video playback and GPU rendering](GPU-VIDEO.md) for the measurements and the
+automatic fallback. The former `enable-proot-seccomp` opt-in file is no longer used.
 
 To roll back the APK with ADB, the public-debug-key builds allow a version-code
 downgrade: `adb install -r -d desktop-chrome-debug.apk` using the **v0.1.0 APK**.
