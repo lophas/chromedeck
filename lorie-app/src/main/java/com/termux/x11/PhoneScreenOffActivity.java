@@ -11,18 +11,22 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
-import android.view.WindowManager;
+import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.TextView;
 import java.lang.ref.WeakReference;
 
 /**
- * A black, minimum-brightness cover for the phone screen while the browser is on an
+ * A black cover for the phone screen while the browser is on an
  * external display, opened from the notification or the Quick Settings tile. The
  * external display sleeps together with the phone, so the device stays awake; this
- * keeps the phone's own screen dark meanwhile. Tap to close.
+ * keeps the phone's own screen dark meanwhile; black pixels stay off on an OLED
+ * screen. Tap to close.
  */
 public class PhoneScreenOffActivity extends Activity {
     private static WeakReference<PhoneScreenOffActivity> current = new WeakReference<>(null);
+    private boolean touching;
+    private float downX, downY, touchSlop;
 
     static void dismiss() {
         PhoneScreenOffActivity activity = current.get();
@@ -33,15 +37,31 @@ public class PhoneScreenOffActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         current = new WeakReference<>(this);
-        WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        attributes.screenBrightness = 0.0f;
-        getWindow().setAttributes(attributes);
         TextView hint = new TextView(this);
         hint.setText("Desktop Chrome is on the external display.\nTap to turn the phone screen on.");
         hint.setTextColor(Color.rgb(40, 40, 40));
         hint.setBackgroundColor(Color.BLACK);
         hint.setGravity(Gravity.CENTER);
-        hint.setOnClickListener(view -> finish());
+        hint.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    touching = true;
+                    downX = event.getRawX();
+                    downY = event.getRawY();
+                    break;
+                case MotionEvent.ACTION_UP:
+                    touching = false;
+                    // A tap closes the cover; a swipe, such as opening the shade, does not.
+                    if (Math.hypot(event.getRawX() - downX, event.getRawY() - downY) < touchSlop)
+                        finish();
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    touching = false;
+                    break;
+            }
+            return true;
+        });
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop() * 2;
         setContentView(hint);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -60,10 +80,15 @@ public class PhoneScreenOffActivity extends Activity {
      */
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        int external = MainActivity.externalDisplayId(this);
-        if (hasFocus && external != Display.INVALID_DISPLAY)
-            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    ActivityOptions.makeBasic().setLaunchDisplayId(external).toBundle());
+        if (!hasFocus)
+            return;
+        // Touching the cover also brings focus here; wait so a tap can close it first.
+        getWindow().getDecorView().postDelayed(() -> {
+            int external = MainActivity.externalDisplayId(this);
+            if (!touching && !isFinishing() && hasWindowFocus() && external != Display.INVALID_DISPLAY)
+                startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        ActivityOptions.makeBasic().setLaunchDisplayId(external).toBundle());
+        }, 300);
     }
 
     @Override protected void onDestroy() {
