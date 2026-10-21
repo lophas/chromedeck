@@ -10,7 +10,14 @@ xdg_app_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 mkdir -p "$xdg_app_dir"
 [ -f "$xdg_app_dir/mimeapps.list" ] || touch "$xdg_app_dir/mimeapps.list"
 mkdir -p "$XDG_CONFIG_HOME" /root/Downloads
-openbox --sm-disable &
+# On an external display Android's desktop caption bar covers the top of the screen;
+# an Openbox margin keeps maximized Chrome windows below it.
+openbox_config=/etc/xdg/openbox/rc.xml
+if [ "${DESKTOP_CHROME_TOP_MARGIN:-0}" -gt 0 ] 2>/dev/null; then
+    sed "/<margins>/,/<\/margins>/ s#<top>[0-9]*</top>#<top>$DESKTOP_CHROME_TOP_MARGIN</top>#" \
+        /etc/xdg/openbox/rc.xml > /tmp/desktop-chrome-openbox.xml && openbox_config=/tmp/desktop-chrome-openbox.xml
+fi
+openbox --sm-disable --config-file "$openbox_config" &
 wm_pid=$!
 chrome_pid=
 # The Android service reads this PID to stop Chrome gracefully.

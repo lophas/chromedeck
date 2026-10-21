@@ -109,7 +109,10 @@ adb install -r desktop-chrome-debug.apk
   and connect the monitor. Then choose **Preferences → Browser → Move to external
   display** (or the same button in the app's notification): the window opens
   maximized on the monitor, and **Move to phone screen** brings it back. Chrome
-  restarts on each move and reopens its tabs.
+  restarts on each move and reopens its tabs. While the browser is on the monitor
+  the phone stays awake, because the monitor sleeps together with the phone
+  screen; a black cover darkens the phone screen until you tap it. The power
+  button still puts both to sleep.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
@@ -172,6 +175,12 @@ Chrome's warning bar about the flag is hidden.
 Many phones end the whole app at once when it is swiped away from recent apps.
 Chrome reopens the tabs it had saved by then, which may miss the last few seconds
 of browsing.
+
+### Window caption on an external display
+
+Android's desktop mode draws a caption bar with window buttons across the top of
+the monitor. The app cannot hide it, so Chrome starts below it and the bar stays
+visible.
 
 ### Audio
 

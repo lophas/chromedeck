@@ -15,6 +15,8 @@ import java.io.*;
 @SuppressWarnings("deprecation")
 public class DesktopChromeApp extends LorieApp implements Application.ActivityLifecycleCallbacks {
     private static final String TAG = "DesktopChrome";
+    /** Height of the desktop-mode caption bar, measured as 56 px at 1.33 density. */
+    private static final int DESKTOP_CAPTION_HEIGHT_DP = 42;
     private final Handler main = new Handler(Looper.getMainLooper());
     private int windows;
     private boolean preparing, starting, bound;
@@ -90,12 +92,21 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onActivityCreated(Activity activity, Bundle state) {
         if (!(activity instanceof MainActivity)) return;
         // The browser session picks the display scale of the display it starts on.
+        boolean external = ((MainActivity) activity).isOnExternalDisplay();
+        // Android's desktop mode draws a window caption bar over the top of the window
+        // on external displays without reporting it to this app; keep Chrome below it.
+        int captionHeight = external
+                ? Math.round(DESKTOP_CAPTION_HEIGHT_DP * activity.getResources().getDisplayMetrics().density) : 0;
         try {
             LinuxRuntime.writeText(LinuxRuntime.displayKind(this),
-                    ((MainActivity) activity).isOnExternalDisplay() ? "external\n" : "builtin\n");
+                    (external ? "external " : "builtin ") + captionHeight + "\n");
         } catch (IOException error) {
             Log.w(TAG, "Cannot record the window's display", error);
         }
+        if (external)
+            PhoneScreenOffActivity.show(this);
+        else
+            PhoneScreenOffActivity.dismiss();
         windows++;
         prepareAndBind();
     }

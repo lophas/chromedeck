@@ -311,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
         if (modeValue > 2)
             prefs.touchMode.put("1");
 
-        oldFullscreen = prefs.fullscreen.get();
+        oldFullscreen = fullscreenPreference();
         oldHideCutout = prefs.hideCutout.get();
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -1046,7 +1046,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyImmersiveMode() {
-        boolean isFullscreen = prefs.fullscreen.get();
+        boolean isFullscreen = fullscreenPreference();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(!isFullscreen);
@@ -1081,7 +1081,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** Keeps or drops the screen-on flag based on elapsed idle time, rescheduling itself for the remaining time. */
     private void checkScreenIdleTimeout() {
-        String mode = prefs.screenIdleTimeout.get();
+        String mode = isOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
         if (!getLorieView().connected() || "never".equals(mode) || "system".equals(mode)) {
             screenIdleTimeoutArmedMode = null;
             return;
@@ -1102,7 +1102,8 @@ public class MainActivity extends AppCompatActivity {
 
     /** Syncs screenIdleTimeout state/timer to the current preference without extending an already-scheduled check. */
     private void applyScreenIdleTimeout() {
-        String mode = prefs.screenIdleTimeout.get();
+        // An external display sleeps together with the phone, so keep it awake there.
+        String mode = isOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
         boolean connected = getLorieView().connected();
         if (!connected || "never".equals(mode) || "system".equals(mode)) {
             handler.removeCallbacks(screenIdleTimeoutCheck);
@@ -1116,7 +1117,7 @@ public class MainActivity extends AppCompatActivity {
 
     void applyWindowSettings() {
         Window window = getWindow();
-        boolean fullscreen = prefs.fullscreen.get();
+        boolean fullscreen = fullscreenPreference();
         boolean hideCutout = prefs.hideCutout.get();
 
         // Recreating would take the window out of picture-in-picture, so it waits for the normal size.
@@ -1320,6 +1321,14 @@ public class MainActivity extends AppCompatActivity {
                     && (d.getFlags() & Display.FLAG_PRIVATE) == 0)
                 return d.getDisplayId();
         return Display.INVALID_DISPLAY;
+    }
+
+    /**
+     * Immersive mode on an external display would place the desktop window's caption
+     * bar over the X screen, so the window there always fits its system bars.
+     */
+    private boolean fullscreenPreference() {
+        return prefs.fullscreen.get() && !isOnExternalDisplay();
     }
 
     public boolean isOnExternalDisplay() {

@@ -16,7 +16,7 @@ public final class LinuxRuntime {
     public static File rootfs(Context context) { return new File(context.getFilesDir(), "debian"); }
     public static File tmp(Context context) { return new File(context.getFilesDir(), "runtime/tmp"); }
     public static File log(Context context) { return new File(context.getFilesDir(), "runtime/chrome-session.log"); }
-    /** "external" when the browser window opened on an external display. */
+    /** "external" or "builtin", then the top margin in pixels that Chrome keeps free. */
     public static File displayKind(Context context) { return new File(context.getFilesDir(), "runtime/display-kind"); }
     /** Written after a failed accelerated start; selects the conservative ptrace-only path. */
     public static File seccompOptOut(Context context) { return new File(context.getFilesDir(), "runtime/disable-proot-seccomp"); }
@@ -134,7 +134,9 @@ public final class LinuxRuntime {
     public static Process startSession(Context context, boolean audioEnabled) throws Exception {
         configureDns(context);
         // Preferences → Browser → Display scale for the display the window opened on.
-        boolean external = readTail(displayKind(context), 64).trim().equals("external");
+        String[] display = readTail(displayKind(context), 64).trim().split("\\s+");
+        boolean external = display[0].equals("external");
+        String topMargin = display.length > 1 && display[1].matches("[0-9]{1,4}") ? display[1] : "0";
         String scale = context.getSharedPreferences(context.getPackageName() + "_preferences",
                 Context.MODE_PRIVATE).getString(external ? "chromeScaleExternal" : "chromeScale", "auto");
         if (!scale.matches("auto|[0-9]+(\\.[0-9]+)?"))
@@ -142,6 +144,7 @@ public final class LinuxRuntime {
         ProcessBuilder builder = command(context,
                 "/usr/bin/env", "DESKTOP_CHROME_AUDIO=" + (audioEnabled ? "1" : "0"),
                 "DESKTOP_CHROME_SCALE=" + scale,
+                "DESKTOP_CHROME_TOP_MARGIN=" + topMargin,
                 "/usr/bin/dbus-run-session", "--", "/usr/local/bin/desktop-chrome-session");
         builder.redirectOutput(ProcessBuilder.Redirect.to(log(context)));
         return builder.start();
