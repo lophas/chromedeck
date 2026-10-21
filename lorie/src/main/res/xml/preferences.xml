@@ -13,6 +13,7 @@
     <!-- Stored as files in the app's runtime directory, read by the browser runtime. -->
     <PreferenceScreen app:key="browser">
         <SwitchPreferenceCompat app:key="autoExternalDisplay" app:defaultValue="true" />
+        <SwitchPreferenceCompat app:key="monitorStatusBar" app:defaultValue="true" />
         <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
         <SwitchPreferenceCompat app:key="chromeAutoUpdate" app:defaultValue="true" app:persistent="false" />
         <SwitchPreferenceCompat app:key="phoneStorage" app:defaultValue="true" />

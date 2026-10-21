@@ -123,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean oldFullscreen = false, oldHideCutout = false;
     private LorieView mLorieView;
     private Presentation presentation;
+    private MonitorStatusBar monitorStatusBar;
     private ImeProxyView imeProxy;
     private OrientationEventListener orientationListener;
 
@@ -821,6 +822,7 @@ public class MainActivity extends AppCompatActivity {
 
         getTerminalToolbarViewPager().setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
 
+        applyMonitorStatusBar();
         lorieView.requestLayout();
         lorieView.invalidate();
 
@@ -1423,6 +1425,10 @@ public class MainActivity extends AppCompatActivity {
             container.addView(view, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             view.movingBetweenWindows = false;
+            monitorStatusBar = new MonitorStatusBar(presentation.getContext());
+            container.addView(monitorStatusBar, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                    MonitorStatusBar.height(presentation.getContext()), Gravity.TOP | Gravity.END));
+            applyMonitorStatusBar();
             presentation.setContentView(container);
             presentation.show();
             setTerminalToolbarView();
@@ -1454,6 +1460,7 @@ public class MainActivity extends AppCompatActivity {
             imeProxy = null;
         }
         presentation = null;
+        monitorStatusBar = null;
         LorieView view = getLorieView();
         view.movingBetweenWindows = true;
         if (view.getParent() != null)
@@ -1466,6 +1473,12 @@ public class MainActivity extends AppCompatActivity {
         applyContentInsets();
         applyScreenIdleTimeout();
         app.refreshNotificationIfShown();
+    }
+
+    /** Shows or hides the battery and clock box on the monitor. */
+    private void applyMonitorStatusBar() {
+        if (monitorStatusBar != null)
+            monitorStatusBar.setVisibility(prefs.monitorStatusBar.get() ? View.VISIBLE : View.GONE);
     }
 
     public boolean isPresenting() {
