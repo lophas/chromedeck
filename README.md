@@ -29,6 +29,7 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Battery-friendly rendering:** a 30 fps default frame rate, adjustable in the
   app's settings.
 - **Audio playback** through Android's media output.
+- **Phone storage in Chrome** at `/root/Phone`, for files and unpacked extensions.
 - **Persistent profile:** settings, sign-ins and extensions survive restarts and
   app updates, and the last session's tabs reopen when the app starts again.
 - **Touch and keyboard controls:** a configurable extra key bar with Esc, Ctrl,
@@ -91,6 +92,12 @@ adb install -r chromedeck.apk
   keyboard is connected. **Show IME with external keyboard** controls Android's
   software keyboard separately.
 - **Browser settings** in **Preferences → Browser**:
+  - **Phone storage** — on by default. The phone's shared storage (Download,
+    Documents and so on) appears to Chrome as `/root/Phone`, for example to load
+    an unpacked extension (`chrome://extensions` → **Developer mode** → **Load
+    unpacked**) or to open and save files. The app asks for the storage
+    permission on its first start; declining turns the setting off, and it can be
+    turned on again here. Changes apply after restarting the app.
   - **Fast system calls (PRoot acceleration)** — on by default; it makes video and
     browsing much faster. If Chrome fails to start with it, the app turns it off
     and says so here. Turn it off if Chrome crashes or misbehaves. Changes apply
@@ -269,6 +276,7 @@ child-process setting afterwards.
 | `files/runtime/chrome-session.log` | Latest browser session log |
 | `files/runtime/disable-proot-seccomp` | Present when PRoot acceleration is off |
 | `files/runtime/disable-chrome-update` | Present when automatic updates are off |
+| `/root/Phone` (inside Debian) | The phone's shared storage, when Phone storage is on |
 
 ## Upstream and licenses
 

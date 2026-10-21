@@ -1,9 +1,22 @@
-# ChromeDeck 0.2.3 — Preview
+# ChromeDeck 0.3.0 — Preview
+
+## New in 0.3.0
+
+- **Phone storage in Chrome:** the phone's shared storage (Download, Documents and
+  so on) appears to Chrome as `/root/Phone`, so files can be opened and saved there
+  and unpacked extensions can be loaded (`chrome://extensions` → Developer mode →
+  Load unpacked). On by default: the app asks for the storage permission on its
+  first start, and declining turns the setting off. **Preferences → Browser →
+  Phone storage** turns it on or off; changes apply after restarting the app.
+
+Install over 0.2.x without uninstalling; the browser profile is kept.
+
+## 0.2.3
 
 Desktop Chrome Android is now **ChromeDeck**. Install over the previous version;
 the browser profile is kept.
 
-## New in 0.2.3
+### New in 0.2.3
 
 - **Full-screen monitor mode:** in desktop mode Chrome fills the monitor without a
   window caption, and moves between the monitor and the phone without restarting.

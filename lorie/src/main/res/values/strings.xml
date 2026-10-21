@@ -45,6 +45,8 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
     <string name="lorie_pref_autoExternalDisplay">Open on external display automatically</string>
     <string name="lorie_pref_autoExternalDisplay_summary">Shows Chrome full screen on a monitor connected in desktop mode; the phone screen works as a touchpad.</string>
+    <string name="lorie_pref_phoneStorage">Phone storage</string>
+    <string name="lorie_pref_phoneStorage_summary">Shows the phone\'s shared storage (Download, Documents…) to Chrome as /root/Phone, for example for Load unpacked extensions. Turned off if the storage permission is declined. Applies after restarting the app.</string>
     <string name="lorie_pref_chromeScale">Display scale — phone screen</string>
     <string name="lorie_pref_chromeScaleExternal">Display scale — external display</string>
     <string name="lorie_pref_frameRateLimit">Frame rate</string>

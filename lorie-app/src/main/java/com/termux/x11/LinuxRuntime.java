@@ -23,6 +23,11 @@ public final class LinuxRuntime {
     public static boolean seccompEnabled(Context context) { return !seccompOptOut(context).exists(); }
 
     public static ProcessBuilder command(Context context, String... guestCommand) throws IOException {
+        return command(context, Collections.emptyList(), guestCommand);
+    }
+
+    /** As above, with extra PRoot binds in "host:guest" form. */
+    public static ProcessBuilder command(Context context, List<String> binds, String... guestCommand) throws IOException {
         File nativeDir = new File(context.getApplicationInfo().nativeLibraryDir);
         File proot = new File(nativeDir, "libproot.so");
         if (!proot.canExecute())
@@ -34,7 +39,10 @@ public final class LinuxRuntime {
                 proot.getAbsolutePath(), "-0", "--kill-on-exit", "--link2symlink",
                 "-r", rootfs(context).getAbsolutePath(),
                 "-b", "/dev", "-b", "/proc", "-b", "/sys",
-                "-b", tmp(context).getAbsolutePath() + ":/tmp", "-w", "/root",
+                "-b", tmp(context).getAbsolutePath() + ":/tmp"));
+        for (String bind : binds)
+            args.addAll(Arrays.asList("-b", bind));
+        args.addAll(Arrays.asList("-w", "/root",
                 "/usr/bin/env", "-i",
                 "HOME=/root", "USER=root", "LOGNAME=root",
                 "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -137,11 +145,20 @@ public final class LinuxRuntime {
         String[] display = readTail(displayKind(context), 64).trim().split("\\s+");
         boolean external = display[0].equals("external");
         String topMargin = display.length > 1 && display[1].matches("[0-9]{1,4}") ? display[1] : "0";
-        String scale = context.getSharedPreferences(context.getPackageName() + "_preferences",
-                Context.MODE_PRIVATE).getString(external ? "chromeScaleExternal" : "chromeScale", "auto");
+        android.content.SharedPreferences prefs = context.getSharedPreferences(
+                context.getPackageName() + "_preferences", Context.MODE_PRIVATE);
+        String scale = prefs.getString(external ? "chromeScaleExternal" : "chromeScale", "auto");
         if (!scale.matches("auto|[0-9]+(\\.[0-9]+)?"))
             scale = "auto";
-        ProcessBuilder builder = command(context,
+        // Preferences → Browser → Phone storage: the phone's shared storage at /root/Phone,
+        // only for the browser session and only while the permission is granted.
+        List<String> binds = new ArrayList<>();
+        File shared = android.os.Environment.getExternalStorageDirectory();
+        if (prefs.getBoolean("phoneStorage", true) && shared.canRead()
+                && context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        == android.content.pm.PackageManager.PERMISSION_GRANTED)
+            binds.add(shared.getAbsolutePath() + ":/root/Phone");
+        ProcessBuilder builder = command(context, binds,
                 "/usr/bin/env", "DESKTOP_CHROME_AUDIO=" + (audioEnabled ? "1" : "0"),
                 "DESKTOP_CHROME_SCALE=" + scale,
                 "DESKTOP_CHROME_TOP_MARGIN=" + topMargin,

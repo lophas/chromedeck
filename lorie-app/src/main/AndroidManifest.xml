@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Optional: Preferences → Browser → Phone storage shares it with the browser. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <application
         android:name="com.termux.x11.DesktopChromeApp"
         tools:replace="android:name"
@@ -25,7 +28,6 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:taskAffinity=".Launcher"
             android:excludeFromRecents="true"
-            android:noHistory="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

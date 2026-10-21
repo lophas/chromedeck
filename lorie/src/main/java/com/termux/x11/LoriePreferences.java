@@ -205,6 +205,15 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
     public static class LoriePreferenceFragment extends PreferenceFragmentCompat implements OnPreferenceChangeListener {
         private final Runnable updateLayout = this::updatePreferencesLayout;
         private Prefs prefs;
+        private final androidx.activity.result.ActivityResultLauncher<String[]> storagePermission =
+                registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                    SwitchPreferenceCompat storage = findPreference("phoneStorage");
+                    boolean granted = Boolean.TRUE.equals(result.get(android.Manifest.permission.WRITE_EXTERNAL_STORAGE));
+                    if (storage != null && granted) {
+                        storage.setChecked(true);
+                        Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
+                    }
+                });
         private static final Method onSetInitialValue;
         static {
             try {
@@ -563,6 +572,18 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                     Toast.makeText(getActivity(), "Wrong resolution format", Toast.LENGTH_SHORT).show();
                     return false;
                 }
+            }
+
+            if ("phoneStorage".contentEquals(key)) {
+                // Turning it on asks for the permission first; declining keeps it off.
+                if ((Boolean) newValue && ContextCompat.checkSelfPermission(requireContext(),
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PERMISSION_GRANTED) {
+                    storagePermission.launch(new String[] { android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE });
+                    return false;
+                }
+                Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
+                return true;
             }
 
             if ("frameRateLimit".contentEquals(key) || "chromeScale".contentEquals(key)
