@@ -9,12 +9,15 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.SystemClock;
+import android.system.ErrnoException;
 import android.system.Os;
+import android.system.OsConstants;
 import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.concurrent.TimeUnit;
 
 /** Owns the X server and one Debian browser session in an isolated Android process. */
 public class EmbeddedX11Service extends Service {
@@ -27,6 +30,7 @@ public class EmbeddedX11Service extends Service {
     private Thread worker;
     private volatile boolean stopping;
     private static final long ACCELERATED_START_GRACE_MS = 20000;
+    private static final long CHROME_STOP_TIMEOUT_MS = 5000;
     private boolean lastSessionAccelerated;
     private long lastSessionMillis;
 
@@ -111,6 +115,8 @@ public class EmbeddedX11Service extends Service {
                 if (audio != null) audio.close();
                 audio = null;
             }
+            // Never keep a PID from a session that Android killed.
+            chromePidFile().delete();
             lastSessionAccelerated = LinuxRuntime.seccompEnabled(this);
             browser = LinuxRuntime.startSession(this, audio != null);
             running = browser;
@@ -120,6 +126,35 @@ public class EmbeddedX11Service extends Service {
         int status = running.waitFor();
         lastSessionMillis = SystemClock.elapsedRealtime() - started;
         return status;
+    }
+
+    private File chromePidFile() {
+        return new File(LinuxRuntime.tmp(this), "desktop-chrome-browser.pid");
+    }
+
+    /**
+     * PRoot kills its remaining guests with SIGKILL when it exits, which Chrome
+     * records as a crash. Ask Chrome itself to quit so it saves the session.
+     */
+    private void stopChromeGracefully(java.lang.Process session) {
+        try {
+            int pid = Integer.parseInt(LinuxRuntime.readTail(chromePidFile(), 32).trim());
+            // A PID can be reused; only signal this session's Chrome browser process.
+            // Under PRoot /proc/PID/exe is the loader, so check the command line.
+            String[] args = new String(java.nio.file.Files.readAllBytes(
+                    new File("/proc/" + pid + "/cmdline").toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8).split("\0");
+            if (args.length == 0 || !"/opt/google/chrome/chrome".equals(args[0])
+                    || java.util.Arrays.stream(args).anyMatch(arg -> arg.startsWith("--type=")))
+                return;
+            Os.kill(pid, OsConstants.SIGTERM);
+            if (!session.waitFor(CHROME_STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                Log.w(TAG, "Chrome did not exit within " + CHROME_STOP_TIMEOUT_MS + " ms.");
+        } catch (NumberFormatException | IOException | ErrnoException error) {
+            Log.w(TAG, "Cannot ask Chrome to quit; stopping the session.", error);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private synchronized void closeAudio() {
@@ -147,7 +182,10 @@ public class EmbeddedX11Service extends Service {
         stopping = true;
         if (worker != null) worker.interrupt();
         synchronized (this) {
-            if (browser != null) browser.destroy();
+            if (browser != null) {
+                stopChromeGracefully(browser);
+                browser.destroy();
+            }
         }
         closeAudio();
         super.onDestroy();

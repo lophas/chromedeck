@@ -12,9 +12,38 @@ mkdir -p "$xdg_app_dir"
 mkdir -p "$XDG_CONFIG_HOME" /root/Downloads
 openbox --sm-disable &
 wm_pid=$!
-trap 'audio_stop; kill "$wm_pid" 2>/dev/null || true' EXIT
-trap 'exit 143' HUP INT TERM
+chrome_pid=
+# The Android service reads this PID to stop Chrome gracefully.
+pid_file=/tmp/desktop-chrome-browser.pid
+trap 'audio_stop; kill "$wm_pid" 2>/dev/null || true; rm -f "$pid_file"' EXIT
+# Let Chrome save its session before the session ends.
+trap 'if [ -n "$chrome_pid" ]; then kill -TERM "$chrome_pid" 2>/dev/null; wait "$chrome_pid"; fi; exit 143' HUP INT TERM
 . /usr/local/lib/desktop-chrome-audio/session.sh
+chrome_profile=/root/.config/desktop-chrome-android
+# Android may stop the app without warning. Mark every profile as cleanly
+# closed so Chrome reopens the last session instead of a crash prompt, and
+# default each profile once to "Continue where you left off".
+python3 - "$chrome_profile" <<'PY' || echo "Profile startup preparation failed" >&2
+import json, os, sys
+root = sys.argv[1]
+for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+    path = os.path.join(root, name, "Preferences")
+    if not os.path.isfile(path):
+        continue
+    with open(path, encoding="utf-8") as f:
+        prefs = json.load(f)
+    profile = prefs.setdefault("profile", {})
+    profile["exit_type"] = "Normal"
+    profile["exited_cleanly"] = True
+    marker = os.path.join(root, name, ".desktop-chrome-restore-default")
+    if not os.path.exists(marker):
+        prefs.setdefault("session", {}).setdefault("restore_on_startup", 1)
+        open(marker, "w").close()
+    tmp = path + ".desktop-chrome-tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(prefs, f, separators=(",", ":"))
+    os.replace(tmp, path)
+PY
 # Skip the official wrapper's two persistent cat processes.
 # Keep the launch options from the last successful device baseline.
 # The renderer limit is soft: site isolation can require additional processes.
@@ -27,8 +56,13 @@ trap 'exit 143' HUP INT TERM
     --disable-background-mode \
     --ozone-platform=x11 \
     --password-store=basic \
-    --user-data-dir=/root/.config/desktop-chrome-android \
+    --user-data-dir="$chrome_profile" \
     --no-first-run \
     --no-default-browser-check \
     --start-maximized \
-    "$@" < /dev/null
+    "$@" < /dev/null &
+chrome_pid=$!
+echo "$chrome_pid" > "$pid_file"
+status=0
+wait "$chrome_pid" || status=$?
+exit "$status"
