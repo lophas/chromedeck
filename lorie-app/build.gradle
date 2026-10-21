@@ -57,10 +57,26 @@ android {
         keyPassword 'xrj45yWGLbsO7W0v'
     }
 
+    // Published builds use a private key kept outside the repository; the public
+    // Termux:X11 test key is only a fallback for local builds. Android flags apps
+    // signed with that key, since anyone can sign with it.
+    def signingFile = new File(System.getenv('DESKTOP_CHROME_SIGNING')
+            ?: "${System.getProperty('user.home')}/.config/desktop-chrome-android/signing.properties")
+    if (signingFile.isFile()) {
+        def signing = new Properties()
+        signingFile.withInputStream { signing.load(it) }
+        signingConfigs.create('desktopChrome') {
+            storeFile new File(signingFile.parentFile, signing.getProperty('storeFile'))
+            storePassword signing.getProperty('storePassword')
+            keyAlias signing.getProperty('keyAlias')
+            keyPassword signing.getProperty('keyPassword')
+        }
+    }
+
     compileOptions.sourceCompatibility JavaVersion.VERSION_1_9
     compileOptions.targetCompatibility JavaVersion.VERSION_1_9
     buildTypes.debug {
-        signingConfig signingConfigs.debug
+        signingConfig signingConfigs.findByName('desktopChrome') ?: signingConfigs.debug
         minifyEnabled true
         shrinkResources true
         proguardFiles 'proguard-rules.pro'
