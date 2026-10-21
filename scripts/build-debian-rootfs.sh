@@ -11,7 +11,7 @@ OUT="$PROJECT_DIR/build/runtime-image"
 BASE_COMMIT="cf1f4a45447842b45e9952e0f018ae734a7341c7"
 BASE_SHA256="df9831efb49cab24dec437e8482f2a9ddbd9e239131fa3ffe095dc1492081e1d"
 BASE_URL="https://raw.githubusercontent.com/debuerreotype/docker-debian-artifacts/$BASE_COMMIT/trixie/oci/blobs/rootfs.tar.gz"
-RELEASE_URL="https://github.com/lophas/desktop-chrome-android/releases/download/debian-runtime-v1"
+RELEASE_URL="https://github.com/lophas/chromedeck/releases/download/debian-runtime-v1"
 CHROME_REPO="https://dl.google.com/linux/chrome/deb"
 
 for tool in proot python3 curl tar gzip dpkg-deb sha256sum; do

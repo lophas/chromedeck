@@ -2,9 +2,9 @@
 
 **The desktop edition of Google Chrome, running locally on Android.**
 
-[Download the latest APK](https://github.com/lophas/desktop-chrome-android/releases/latest/download/chromedeck.apk)
+[Download the latest APK](https://github.com/lophas/chromedeck/releases/latest/download/chromedeck.apk)
 · [Release notes](RELEASE_NOTES.md)
-· [All releases](https://github.com/lophas/desktop-chrome-android/releases)
+· [All releases](https://github.com/lophas/chromedeck/releases)
 
 ## Mission
 
@@ -54,7 +54,7 @@ This is a **preview**. Other devices and Android versions may behave differently
 ## Install
 
 1. Download `chromedeck.apk` from the
-   [latest release](https://github.com/lophas/desktop-chrome-android/releases/latest).
+   [latest release](https://github.com/lophas/chromedeck/releases/latest).
 2. Open the APK and allow installation from that source when Android asks.
 3. **Google Play Protect warns about the app** ("Unsafe app blocked"). Choose
    **More details → Install anyway**. See [Play Protect warning](#play-protect-warning).
@@ -203,8 +203,8 @@ Builds use JDK 21, Android SDK 34 and NDK **29.0.14206865** on a Debian x86_64 h
 
 ```bash
 apt-get install -y build-essential git curl unzip python3 file bison flex gawk xkb-data
-git clone --recurse-submodules https://github.com/lophas/desktop-chrome-android.git
-cd desktop-chrome-android
+git clone --recurse-submodules https://github.com/lophas/chromedeck.git
+cd chromedeck
 export ANDROID_HOME=/path/to/android-sdk
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 ./gradlew :lorie-app:assembleStandaloneDebug

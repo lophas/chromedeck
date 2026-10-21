@@ -3,7 +3,7 @@
   "image_version": 1,
   "architecture": "arm64",
   "distribution": "Debian 13 (trixie)",
-  "image_url": "https://github.com/lophas/desktop-chrome-android/releases/download/debian-runtime-v1/debian-runtime-v1-arm64.tar.gz",
+  "image_url": "https://github.com/lophas/chromedeck/releases/download/debian-runtime-v1/debian-runtime-v1-arm64.tar.gz",
   "image_sha256": "d201bf82df0f61355b23b2da783d8b4569af041c5c214e833e19510a14eb0418",
   "image_size": 240550275,
   "unpacked_size": 619336508,
