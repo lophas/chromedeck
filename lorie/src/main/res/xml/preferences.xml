@@ -14,6 +14,7 @@
     <PreferenceScreen app:key="browser">
         <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
         <SwitchPreferenceCompat app:key="chromeAutoUpdate" app:defaultValue="true" app:persistent="false" />
+        <ListPreference app:key="chromeScale" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />
         <ListPreference app:key="frameRateLimit" app:defaultValue="30" app:entries="@array/frameRateLimitEntries" app:entryValues="@array/frameRateLimitValues" />
     </PreferenceScreen>
     <PreferenceScreen app:key="output">

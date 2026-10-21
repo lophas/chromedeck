@@ -131,8 +131,14 @@ public final class LinuxRuntime {
 
     public static Process startSession(Context context, boolean audioEnabled) throws Exception {
         configureDns(context);
+        // Preferences → Browser → Display scale; read when the session starts.
+        String scale = context.getSharedPreferences(context.getPackageName() + "_preferences",
+                Context.MODE_PRIVATE).getString("chromeScale", "auto");
+        if (!scale.matches("auto|[0-9]+(\\.[0-9]+)?"))
+            scale = "auto";
         ProcessBuilder builder = command(context,
                 "/usr/bin/env", "DESKTOP_CHROME_AUDIO=" + (audioEnabled ? "1" : "0"),
+                "DESKTOP_CHROME_SCALE=" + scale,
                 "/usr/bin/dbus-run-session", "--", "/usr/local/bin/desktop-chrome-session");
         builder.redirectOutput(ProcessBuilder.Redirect.to(log(context)));
         return builder.start();

@@ -49,6 +49,12 @@ PY
 # The renderer limit is soft: site isolation can require additional processes.
 # PRoot provides no Linux browser sandbox, so --no-sandbox is required; Android's
 # app sandbox still applies. --test-type hides the resulting warning bar.
+# Preferences → Browser → Display scale renders Chrome's interface and pages larger
+# at full resolution, like a HiDPI display.
+case "${DESKTOP_CHROME_SCALE:-auto}" in
+    auto) ;;
+    *) set -- --force-device-scale-factor="$DESKTOP_CHROME_SCALE" "$@" ;;
+esac
 /opt/google/chrome/chrome \
     --no-sandbox \
     --test-type \

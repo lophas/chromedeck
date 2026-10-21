@@ -565,7 +565,7 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                 }
             }
 
-            if ("frameRateLimit".contentEquals(key))
+            if ("frameRateLimit".contentEquals(key) || "chromeScale".contentEquals(key))
                 Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
 
             if ("prootAcceleration".contentEquals(key) || "chromeAutoUpdate".contentEquals(key)) {
