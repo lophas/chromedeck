@@ -83,6 +83,17 @@ Battery Status API. Only **Always on** works, made visible by
 difference: idle 17–28% with it and 21–25% without, YouTube 1080p about 150% in
 both cases. ChromeDeck therefore leaves it alone.
 
+## Frame transfer to the screen
+
+The embedded X server draws into a shared AHardwareBuffer that the GPU shows
+directly (the log reports buffers of type 3; the legacy path that uploads pixels
+with `glTexImage2D` is not used), and it redraws only when the screen changed:
+about 3 frames per second while idle. While idle the X server's main thread uses
+about 3% of a core and its other threads about 2%. It wakes on every display
+refresh to check for changes; stopping that while idle would save at most 1–2%
+and touch the vsync timing that frame pacing depends on, so it was not changed.
+Most of the remaining idle cost comes from the open pages' own timers and scripts.
+
 ## Hardware video decoding
 
 Not available. Linux Chrome decodes in hardware only through VA-API or V4L2

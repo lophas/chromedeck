@@ -1,6 +1,19 @@
-# ChromeDeck 0.3.3 — Preview
+# ChromeDeck 0.3.4 — Preview
 
-## New in 0.3.3
+## New in 0.3.4
+
+- **Lower CPU use in the background:** Chrome's window is minimized while
+  ChromeDeck cannot be seen — another app is in front on the phone (after 3
+  seconds) or the screens are off — and restored when it returns. A minimized
+  Chrome stops drawing pages; audio keeps playing. A playing YouTube video drops
+  from about 150% to about 50% of a CPU core. While Chrome is on a monitor it
+  stays visible until the screens turn off.
+
+Install over 0.3.x without uninstalling; the browser profile is kept.
+
+## 0.3.3
+
+### New in 0.3.3
 
 - **Battery and clock height:** **Preferences → Browser → Battery and clock
   height** sets the size of the box in the monitor's corner, so that it covers
