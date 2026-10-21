@@ -36,7 +36,8 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
   Alt and navigation keys that hides itself when an external keyboard is connected.
 - **Fullscreen mode** without Android's status and navigation bars.
 - **External monitor:** Chrome fills a connected monitor in Android's desktop mode,
-  with its own display scale, while the phone screen works as a touchpad.
+  with its own display scale and the phone's battery level and clock in the
+  corner, while the phone screen works as a touchpad.
 - **Copyable diagnostics** when startup or a browser session fails.
 
 ## Requirements
@@ -123,6 +124,9 @@ adb install -r chromedeck.apk
   the monitor; the mouse then belongs to the phone until you switch back. The
   phone stays awake while Chrome is on the monitor, because the monitor sleeps
   together with the phone screen; the power button still puts both to sleep.
+  The top right corner of the monitor shows the phone's battery level and the
+  time over Chrome's window buttons; **Preferences → Browser → Battery and clock
+  on external display** turns it off.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts

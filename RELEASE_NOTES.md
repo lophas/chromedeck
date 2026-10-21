@@ -1,6 +1,18 @@
-# ChromeDeck 0.3.1 — Preview
+# ChromeDeck 0.3.2 — Preview
 
-## Fixes in 0.3.1
+## New in 0.3.2
+
+- **Battery and clock on the monitor:** while Chrome is on an external display,
+  its top right corner shows the phone's battery level and the time, with ⚡ while
+  charging; the level turns orange below 20% and red below 10%. The box covers
+  Chrome's window buttons, which have no use there. **Preferences → Browser →
+  Battery and clock on external display** turns it off.
+
+Install over 0.3.x without uninstalling; the browser profile is kept.
+
+## 0.3.1
+
+### Fixes in 0.3.1
 
 - While Chrome is on a monitor, the key bar stays visible on the phone touchpad;
   a three-finger swipe on the touchpad could hide it.
