@@ -33,6 +33,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The icon's Preferences shortcut; the app has no other visible settings button. -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/lorie_shortcuts" />
         </activity>
         <activity
             android:name="com.termux.x11.PhoneScreenOffActivity"

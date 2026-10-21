@@ -576,30 +576,48 @@ public class TouchInputHandler {
         return id == 0 ? null : ctx.getResources().getString(id);
     }
 
+    private static void setText(NotificationCompat.Builder builder, String text) {
+        builder.setContentText(text).setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+    }
+
+    private static PendingIntent customAction(Context ctx, int requestCode, String what, MainActivity activity) {
+        return PendingIntent.getBroadcast(ctx, requestCode, new Intent(MainActivity.ACTION_CUSTOM) {{
+            putExtra("what", what);
+            putExtra(CmdEntryPoint.EXTRA_DOCUMENT_TAG, activity.getTag());
+            setPackage(ctx.getPackageName());
+        }}, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
     public static NotificationCompat.Builder setupNotification(Context ctx, Prefs prefs, NotificationCompat.Builder builder) {
         PendingIntent i;
 
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationTap", 0)) != null)
             builder.setContentIntent(i);
 
-        if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton0", 1)) != null)
-            builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton0"), i);
-
+        // ChromeDeck: no Settings button; settings open from the touchpad toolbar on the
+        // phone while Chrome is on a monitor, or from the app icon's shortcut.
+        boolean monitorAvailable = ctx instanceof MainActivity && !((MainActivity) ctx).isPresenting()
+                && !((MainActivity) ctx).isOnExternalDisplay()
+                && MainActivity.externalDisplayId(ctx) != android.view.Display.INVALID_DISPLAY;
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
             builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
 
-        // ChromeDeck: while the browser is on a monitor, tapping the notification or
-        // its button darkens the phone screen.
+        // ChromeDeck: with a monitor connected, a button moves Chrome between the monitor
+        // desktop and the phone; the notification text explains it, as buttons have little room.
         if (ctx instanceof MainActivity && ((MainActivity) ctx).isPresenting()) {
             MainActivity activity = (MainActivity) ctx;
+            setText(builder, ctx.getString(com.termux.x11.R.string.lorie_notification_text_on_monitor));
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_show_on_phone),
+                    customAction(ctx, 5, "showOnPhone", activity));
             builder.addAction(0, ctx.getString(activity.isPhoneScreenOff()
-                            ? com.termux.x11.R.string.lorie_notification_phone_screen_on
-                            : com.termux.x11.R.string.lorie_notification_phone_screen_off),
-                    PendingIntent.getBroadcast(ctx, 4, new Intent(MainActivity.ACTION_CUSTOM) {{
-                        putExtra("what", "togglePhoneScreenOff");
-                        putExtra(CmdEntryPoint.EXTRA_DOCUMENT_TAG, activity.getTag());
-                        setPackage(ctx.getPackageName());
-                    }}, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+                            ? com.termux.x11.R.string.lorie_notification_use_phone
+                            : com.termux.x11.R.string.lorie_notification_use_touchpad),
+                    customAction(ctx, 4, "togglePhoneScreenOff", activity));
+        } else if (monitorAvailable) {
+            MainActivity activity = (MainActivity) ctx;
+            setText(builder, ctx.getString(com.termux.x11.R.string.lorie_notification_text_monitor_available));
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_show_on_monitor),
+                    customAction(ctx, 6, "showOnMonitor", activity));
         } else if (ctx instanceof MainActivity && ((MainActivity) ctx).isOnExternalDisplay()) {
             PendingIntent screenOff = PendingIntent.getActivity(ctx, 3,
                     new Intent().setClassName(ctx, "com.termux.x11.PhoneScreenOffActivity")

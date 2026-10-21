@@ -1,6 +1,39 @@
-# ChromeDeck 0.3.4 — Preview
+# ChromeDeck 0.4.0 — Preview
 
-## New in 0.3.4
+## New in 0.4.0
+
+- **Monitor choice:** when ChromeDeck starts with a monitor connected, or a monitor
+  connects while it runs, it asks whether to **Switch to desktop** or
+  **Keep mirroring**. **Remember this choice** saves the answer, **Preferences →
+  Browser → Show Chrome on a connected monitor** (Ask / Always / Never) changes it,
+  and **Desktop** / **Mirroring** in the app's notification switch for the
+  current connection.
+- **No Developer options needed** on the test phone: Chrome also takes over a
+  monitor in normal mirroring mode, and mirroring returns when Chrome goes back to
+  the phone.
+- The monitor shows black instead of white while it switches over to Chrome.
+- **Touchpad toolbar:** while Chrome is on the monitor, faint buttons at the top
+  of the dark phone screen open Settings, the on-screen keyboard, the phone for
+  other apps, and Exit (after a confirmation).
+- **Simpler notification:** **Exit** and **Desktop** while the monitor mirrors the
+  phone; **Exit**, **Mirroring** and **Use touchpad** / **Use phone** while Chrome
+  is on the monitor. Settings open from the touchpad toolbar or the app icon's
+  **Preferences** shortcut.
+- **No key bar:** Termux:X11's extra key bar is gone; the back gesture opens the
+  on-screen keyboard.
+- **Full on-screen keyboard with a hardware keyboard:** Android then shows only a
+  small keyboard bar; the touchpad's keyboard button offers to open Android's
+  physical keyboard settings, where **Use on-screen keyboard** allows the full
+  keyboard.
+- Exit removes the app's notification also while Chrome is on a monitor.
+
+Install over 0.3.x without uninstalling; the browser profile is kept. An
+**Open on external display automatically** setting that was turned off becomes
+**Never**.
+
+## 0.3.4
+
+### New in 0.3.4
 
 - **Lower CPU use in the background:** Chrome's window is minimized while
   ChromeDeck cannot be seen — another app is in front on the phone (after 3

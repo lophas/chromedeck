@@ -24,7 +24,7 @@ E.g. <b>META</b> for <i>META key</i>, \n
 <b>ZOOM_RESET</b> for <i>zoom reset key</i>, \n
 <b>EXIT</b> for <i>application exit key</i>.</string>
     <string name="lorie_notification_content_text">Pull down to show options</string>
-    <string name="lorie_notification_open_preferences">Preferences</string>
+    <string name="lorie_notification_open_preferences">Settings</string>
     <string name="lorie_notification_exit">Exit</string>
     <string name="lorie_notification_restart_activity">Restart</string>
     <string name="lorie_notification_toggle_soft_keyboard">Toggle IME</string>
@@ -32,7 +32,6 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_notification_release_pointer_and_keyboard_capture">Release captures</string>
     <string name="lorie_notification_toggle_fullscreen">Toggle fullscreen</string>
     <string name="lorie_notification_phone_screen_off">Phone screen off</string>
-    <string name="lorie_notification_phone_screen_on">Phone screen on</string>
 
     <string name="lorie_pref_main">Preferences</string>
     <string name="lorie_pref_output">Output</string>
@@ -43,8 +42,27 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_prootAcceleration_autoDisabled">Turned off automatically after Chrome failed to start with it. Turn on to try again; applies after restarting the app.</string>
     <string name="lorie_pref_chromeAutoUpdate">Update Chrome automatically</string>
     <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
-    <string name="lorie_pref_autoExternalDisplay">Open on external display automatically</string>
-    <string name="lorie_pref_autoExternalDisplay_summary">Shows Chrome full screen on a monitor connected in desktop mode; the phone screen works as a touchpad.</string>
+    <string name="lorie_pref_externalDisplay">Show Chrome on a connected monitor</string>
+    <string name="lorie_pref_externalDisplay_summary">Chrome fills the monitor and the phone screen works as a touchpad. Otherwise the monitor shows what Android shows there, such as the mirrored phone screen. The app\'s notification switches at any time.</string>
+    <string name="lorie_external_display_title">Monitor connected</string>
+    <string name="lorie_external_display_message">Switch the monitor to a ChromeDeck desktop, with Chrome full screen and the phone screen as a touchpad? Otherwise the monitor keeps showing what Android shows there, such as the mirrored phone screen.</string>
+    <string name="lorie_external_display_remember">Remember this choice</string>
+    <string name="lorie_external_display_show">Switch to desktop</string>
+    <string name="lorie_external_display_not_now">Keep mirroring</string>
+    <string name="lorie_touchpad_settings">Settings</string>
+    <string name="lorie_touchpad_keyboard">Keyboard</string>
+    <string name="lorie_touchpad_keyboard_setting">With a hardware keyboard connected, Android shows only a small keyboard bar. To get the full on-screen keyboard, turn on Use on-screen keyboard in Android\'s physical keyboard settings.</string>
+    <string name="lorie_touchpad_keyboard_open_setting">Open settings</string>
+    <string name="lorie_touchpad_keyboard_small">Small bar</string>
+    <string name="lorie_touchpad_phone">Use the phone for other apps; Chrome stays on the monitor</string>
+    <string name="lorie_touchpad_exit">Exit</string>
+    <string name="lorie_touchpad_exit_question">Exit ChromeDeck? Chrome closes and reopens its tabs on the next start.</string>
+    <string name="lorie_notification_use_touchpad">Use touchpad</string>
+    <string name="lorie_notification_use_phone">Use phone</string>
+    <string name="lorie_notification_show_on_monitor">Desktop</string>
+    <string name="lorie_notification_show_on_phone">Mirroring</string>
+    <string name="lorie_notification_text_on_monitor">Chrome is on the monitor. Mirroring: Chrome back on the phone. Use touchpad / Use phone: the phone screen as a touchpad or for other apps.</string>
+    <string name="lorie_notification_text_monitor_available">A monitor is connected. Desktop: Chrome full screen on the monitor.</string>
     <string name="lorie_pref_monitorStatusBar">Battery and clock on external display</string>
     <string name="lorie_pref_monitorStatusBar_summary">Shows the phone\'s battery level and the time in the top right corner of the monitor, over Chrome\'s window buttons.</string>
     <string name="lorie_pref_monitorStatusBarHeight">Battery and clock height</string>

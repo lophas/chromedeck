@@ -87,7 +87,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         if (!(activity instanceof MainActivity)) return;
         // The browser session picks the display scale of the display it starts on.
         boolean onExternal = ((MainActivity) activity).isOnExternalDisplay();
-        boolean external = onExternal || MainActivity.presentationWanted(this, builtInPrefs);
+        boolean external = onExternal || MainActivity.presentationLikely(this, builtInPrefs);
         // Android's desktop mode draws a window caption bar over the top of the window
         // on external displays without reporting it to this app; keep Chrome below it.
         int captionHeight = onExternal

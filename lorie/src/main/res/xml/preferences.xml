@@ -12,7 +12,7 @@
     </PreferenceScreen>
     <!-- Stored as files in the app's runtime directory, read by the browser runtime. -->
     <PreferenceScreen app:key="browser">
-        <SwitchPreferenceCompat app:key="autoExternalDisplay" app:defaultValue="true" />
+        <ListPreference app:key="externalDisplay" app:defaultValue="ask" app:entries="@array/externalDisplayEntries" app:entryValues="@array/externalDisplayValues" />
         <SwitchPreferenceCompat app:key="monitorStatusBar" app:defaultValue="true" />
         <SeekBarPreference app:key="monitorStatusBarHeight" app:dependency="monitorStatusBar" app:defaultValue="37" app:min="20" android:max="80" app:showSeekBarValue="true" app:updatesContinuously="true" />
         <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />

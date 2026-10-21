@@ -32,10 +32,9 @@ for 4.
 
 ## Monitor without Developer options
 
-ChromeDeck shows Chrome on a monitor through a Presentation window, but on the test
-phone this still needs Developer options' desktop mode: in mirroring mode the
-phone's own HDMI mirroring owns the display, which is disabled for apps. Other
-phones may expose the monitor as a presentation display without desktop mode.
+Done in 0.4.0: the test phone hands a mirrored monitor over to the Presentation
+window, so desktop mode is not needed there; ChromeDeck asks before taking the
+monitor. Behavior on Samsung DeX, Pixel desktop mode and other phones is untested.
 
 ## WebGL through SwiftShader
 

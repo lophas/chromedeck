@@ -110,6 +110,9 @@ afterEvaluate {
         out << '    Object legacyKeepScreenOn = preferences.getAll().get("keepScreenOn");\n'
         out << '    if (legacyKeepScreenOn instanceof Boolean && !preferences.contains("screenIdleTimeout"))\n'
         out << '      preferences.edit().putString("screenIdleTimeout", (Boolean) legacyKeepScreenOn ? "never" : "system").commit();\n'
+        out << '    Object legacyAutoExternalDisplay = preferences.getAll().get("autoExternalDisplay");\n'
+        out << '    if (Boolean.FALSE.equals(legacyAutoExternalDisplay) && !preferences.contains("externalDisplay"))\n'
+        out << '      preferences.edit().putString("externalDisplay", "never").commit();\n'
         out << '  }\n'
         out << '}\n'
     }

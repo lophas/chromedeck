@@ -57,6 +57,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -494,6 +495,9 @@ public class MainActivity extends AppCompatActivity {
             displayManager.unregisterDisplayListener(presentationDisplayListener);
         if (presentation != null)
             presentation.dismiss();
+        // The notification otherwise stays after Exit while Chrome was on a monitor.
+        if (!redirected && isFinishing())
+            app.onActivityPaused();
         handler.removeCallbacks(screenIdleTimeoutCheck);
         if (mInputHandler != null)
             mInputHandler.onDestroy();
@@ -840,6 +844,10 @@ public class MainActivity extends AppCompatActivity {
             hardwareExtraKeysOverride = null;
         if ("additionalKbdVisible".equals(key))
             return;
+        if ("externalDisplay".equals(key)) {
+            presentationChoice = null;
+            handler.post(this::updatePresentation);
+        }
 
         handler.removeCallbacks(this::onPreferencesChangedCallback);
         handler.postDelayed(this::onPreferencesChangedCallback, 100);
@@ -897,6 +905,7 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         app.onActivityResumed(this);
+        updatePresentation();
 
         orientationListener.enable();
         setTerminalToolbarView();
@@ -948,14 +957,10 @@ public class MainActivity extends AppCompatActivity {
         pager.setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace()
                 ? 1.f : ((float) prefs.opacityEKBar.get()) / 100);
 
-        boolean hideForHardwareKeyboard = externalKeyboardConnected
-                && prefs.hideAdditionalKbdWithExternalKeyboard.get()
-                && !Boolean.TRUE.equals(hardwareExtraKeysOverride);
-        // While Chrome is on a monitor the phone is a touchpad, and the key bar there
-        // stays visible: a three-finger swipe on the touchpad would otherwise hide it.
-        boolean showNow = !isInPictureInPictureMode && getLorieView().connected()
-                && prefs.showAdditionalKbd.get()
-                && (presentation != null || (prefs.additionalKbdVisible.get() && !hideForHardwareKeyboard));
+        // ChromeDeck never shows Termux:X11's key bar: Chrome needs none of its keys, the
+        // on-screen keyboard opens with the back gesture, and on the monitor touchpad a
+        // small toolbar of its own offers settings and the keyboard.
+        boolean showNow = false;
 
         pager.setVisibility(showNow ? View.VISIBLE : View.INVISIBLE);
 
@@ -1454,7 +1459,60 @@ public class MainActivity extends AppCompatActivity {
 
     /** Whether the browser should be shown on an external display through a Presentation. */
     public static boolean presentationWanted(Context ctx, Prefs prefs) {
-        return externalDisplayId(ctx) != Display.INVALID_DISPLAY && prefs.autoExternalDisplay.get();
+        if (externalDisplayId(ctx) == Display.INVALID_DISPLAY)
+            return false;
+        if (presentationChoice != null)
+            return presentationChoice;
+        return "always".equals(prefs.externalDisplay.get());
+    }
+
+    /** Chrome will probably be shown on the monitor: it is, or the user has not answered yet. */
+    public static boolean presentationLikely(Context ctx, Prefs prefs) {
+        return presentationWanted(ctx, prefs) || externalDisplayId(ctx) != Display.INVALID_DISPLAY
+                && presentationChoice == null && "ask".equals(prefs.externalDisplay.get());
+    }
+
+    /**
+     * The choice for the connected monitor, from the question or the notification; null
+     * until one is made. It is forgotten when the monitor disconnects.
+     */
+    private static Boolean presentationChoice;
+    private AlertDialog presentationQuestion;
+
+    /** Shows Chrome on the monitor or on the phone until the monitor disconnects. */
+    public void setPresentationChoice(boolean onMonitor) {
+        presentationChoice = onMonitor;
+        updatePresentation();
+        app.refreshNotificationIfShown();
+    }
+
+    /** Asks whether Chrome should go to a newly connected monitor. */
+    private void askAboutPresentation() {
+        if (presentationQuestion != null || !resumed)
+            return;
+        CheckBox remember = new CheckBox(this);
+        remember.setText(R.string.lorie_external_display_remember);
+        int pad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
+        FrameLayout box = new FrameLayout(this);
+        box.setPadding(pad, pad / 2, pad, 0);
+        box.addView(remember);
+        presentationQuestion = new AlertDialog.Builder(this)
+                .setTitle(R.string.lorie_external_display_title)
+                .setMessage(R.string.lorie_external_display_message)
+                .setView(box)
+                .setPositiveButton(R.string.lorie_external_display_show, (d, w) -> {
+                    if (remember.isChecked())
+                        prefs.externalDisplay.put("always");
+                    setPresentationChoice(true);
+                })
+                .setNegativeButton(R.string.lorie_external_display_not_now, (d, w) -> {
+                    if (remember.isChecked())
+                        prefs.externalDisplay.put("never");
+                    setPresentationChoice(false);
+                })
+                .setOnCancelListener(d -> setPresentationChoice(false))
+                .setOnDismissListener(d -> presentationQuestion = null)
+                .show();
     }
 
     /**
@@ -1463,6 +1521,14 @@ public class MainActivity extends AppCompatActivity {
      * keeps input focus for the keyboard and the captured mouse.
      */
     void updatePresentation() {
+        if (externalDisplayId(this) == Display.INVALID_DISPLAY) {
+            presentationChoice = null;
+            if (presentationQuestion != null)
+                presentationQuestion.dismiss();
+        } else if (presentationChoice == null && "ask".equals(prefs.externalDisplay.get())
+                && !isOnExternalDisplay() && getLorieView().connected()) {
+            askAboutPresentation();
+        }
         boolean wanted = canPresent();
         // Move the view only once the X connection is up; moving it earlier lost the connection.
         if (wanted && presentation == null && getLorieView().connected()) {
@@ -1470,7 +1536,8 @@ public class MainActivity extends AppCompatActivity {
             if (display == null)
                 return;
             LorieView view = getLorieView();
-            presentation = new Presentation(this, display) {
+            // A black theme: the default one shows white while the monitor switches over.
+            presentation = new Presentation(this, display, android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
                 @Override public void dismiss() {
                     // Take the view back before the window goes away, also when Android
                     // dismisses the presentation because the display disconnected.
@@ -1478,6 +1545,8 @@ public class MainActivity extends AppCompatActivity {
                     super.dismiss();
                 }
             };
+            // Black, not the theme's white, while the monitor switches over to Chrome.
+            presentation.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));
             FrameLayout container = new FrameLayout(presentation.getContext());
             container.setBackgroundColor(android.graphics.Color.BLACK);
             view.movingBetweenWindows = true;
@@ -1501,6 +1570,7 @@ public class MainActivity extends AppCompatActivity {
                 imeProxy.setOnCapturedPointerListener((v, e) -> mInputHandler.handleTouchEvent(view, view, e));
             ((FrameLayout) findViewById(R.id.frame)).addView(imeProxy, new FrameLayout.LayoutParams(1, 1));
             imeProxy.requestFocus();
+            addTouchpadToolbar();
             applyScreenIdleTimeout();
             setCapturingEnabled(true);
             updateBrowserVisibility();
@@ -1520,6 +1590,10 @@ public class MainActivity extends AppCompatActivity {
             ((ViewGroup) imeProxy.getParent()).removeView(imeProxy);
             imeProxy = null;
         }
+        if (touchpadToolbar != null) {
+            ((ViewGroup) touchpadToolbar.getParent()).removeView(touchpadToolbar);
+            touchpadToolbar = null;
+        }
         presentation = null;
         monitorStatusBar = null;
         LorieView view = getLorieView();
@@ -1535,6 +1609,74 @@ public class MainActivity extends AppCompatActivity {
         applyScreenIdleTimeout();
         app.refreshNotificationIfShown();
         updateBrowserVisibility();
+    }
+
+    private LinearLayout touchpadToolbar;
+
+    /**
+     * A row of faint buttons at the top of the dark phone screen while Chrome is on the
+     * monitor: settings, on-screen keyboard, using the phone for other apps, and exit.
+     * Touches on it do not reach the touchpad.
+     */
+    private void addTouchpadToolbar() {
+        float dp = getResources().getDisplayMetrics().density;
+        touchpadToolbar = new LinearLayout(this);
+        touchpadToolbar.setOrientation(LinearLayout.HORIZONTAL);
+        addTouchpadButton(R.drawable.ic_extra_key_settings, R.string.lorie_touchpad_settings,
+                () -> startActivity(new Intent(this, LoriePreferences.class).setAction(Intent.ACTION_MAIN)));
+        addTouchpadButton(R.drawable.ic_extra_key_keyboard, R.string.lorie_touchpad_keyboard, this::showKeyboardFromTouchpad);
+        addTouchpadButton(R.drawable.lorie_ic_phone, R.string.lorie_touchpad_phone, this::togglePhoneScreenOff);
+        // Exit asks first: the button is easy to touch while using the touchpad.
+        addTouchpadButton(R.drawable.lorie_ic_exit, R.string.lorie_touchpad_exit, () -> new AlertDialog.Builder(this)
+                .setMessage(R.string.lorie_touchpad_exit_question)
+                .setPositiveButton(R.string.lorie_touchpad_exit, (d, w) -> finish())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show());
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        lp.topMargin = (int) (16 * dp);
+        ((FrameLayout) findViewById(R.id.frame)).addView(touchpadToolbar, lp);
+    }
+
+    /**
+     * Android keeps the on-screen keyboard down to a small bar while a hardware keyboard is
+     * connected, unless its physical keyboard setting allows the full keyboard; the app
+     * cannot change that setting, so it offers to open it.
+     */
+    private void showKeyboardFromTouchpad() {
+        Configuration config = getResources().getConfiguration();
+        boolean hardwareKeyboard = config.keyboard != Configuration.KEYBOARD_NOKEYS
+                && config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        if (!hardwareKeyboard || Settings.Secure.getInt(getContentResolver(), "show_ime_with_hard_keyboard", 0) != 0) {
+            toggleKeyboardVisibility();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.lorie_touchpad_keyboard_setting)
+                .setPositiveButton(R.string.lorie_touchpad_keyboard_open_setting, (d, w) -> {
+                    try {
+                        startActivity(new Intent("android.settings.HARD_KEYBOARD_SETTINGS"));
+                    } catch (Exception e) {
+                        startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
+                    }
+                })
+                .setNegativeButton(R.string.lorie_touchpad_keyboard_small, (d, w) -> toggleKeyboardVisibility())
+                .show();
+    }
+
+    private void addTouchpadButton(int icon, int description, Runnable action) {
+        float dp = getResources().getDisplayMetrics().density;
+        ImageButton button = new ImageButton(this);
+        button.setImageResource(icon);
+        button.setColorFilter(android.graphics.Color.WHITE);
+        button.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        button.setAlpha(0.35f);
+        button.setContentDescription(getString(description));
+        button.setFocusable(false);
+        int pad = (int) (14 * dp);
+        button.setPadding(pad, pad, pad, pad);
+        button.setOnClickListener(v -> action.run());
+        touchpadToolbar.addView(button);
     }
 
     /** Shows or hides the battery and clock box on the monitor. */

@@ -32,11 +32,11 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Phone storage in Chrome** at `/root/Phone`, for files and unpacked extensions.
 - **Persistent profile:** settings, sign-ins and extensions survive restarts and
   app updates, and the last session's tabs reopen when the app starts again.
-- **Touch and keyboard controls:** a configurable extra key bar with Esc, Ctrl,
-  Alt and navigation keys that hides itself when an external keyboard is connected.
+- **Touch and keyboard controls:** touch, mouse, touchpad and hardware keyboard
+  input, with Android's on-screen keyboard on the back gesture.
 - **Fullscreen mode** without Android's status and navigation bars.
-- **External monitor:** Chrome fills a connected monitor in Android's desktop mode,
-  with its own display scale and the phone's battery level and clock in the
+- **External monitor:** Chrome fills a connected monitor instead of the mirrored
+  phone screen, when you choose so, with its own display scale and the phone's battery level and clock in the
   corner, while the phone screen works as a touchpad.
 - **Copyable diagnostics** when startup or a browser session fails.
 
@@ -80,18 +80,17 @@ adb install -r chromedeck.apk
 
 ## Getting started
 
-- **Preferences** open from the app's Android notification or from the gear key
-  on the extra key bar.
+- **Preferences** open from the app icon's **Preferences** shortcut (touch and
+  hold the icon), or from the gear on the touchpad toolbar while Chrome is on a
+  monitor.
+- **On-screen keyboard:** the back gesture opens and closes it; on the monitor
+  touchpad, the keyboard button on the toolbar.
 - **Fullscreen:** **Preferences → Output → Fullscreen** hides Android's status and
   navigation bars; swipe from the screen edge to show them briefly.
   **Hide cutout** also uses the area beside the camera cutout.
-- **Extra key bar:** toggle it with a three-finger swipe down. If your phone uses
-  that gesture for screenshots, map **Preferences → Other → Configure response to
-  user actions → Volume down → toggle additional key bar**.
-- **External keyboard:** **Preferences → Keyboard → Hide extra key bar with
-  external keyboard** (on by default) hides the bar while a USB or Bluetooth
-  keyboard is connected. **Show IME with external keyboard** controls Android's
-  software keyboard separately.
+- **External keyboard:** **Preferences → Keyboard → Show IME with external
+  keyboard** controls whether Android's on-screen keyboard also opens while a USB
+  or Bluetooth keyboard is connected.
 - **Browser settings** in **Preferences → Browser**:
   - **Phone storage** — on by default. The phone's shared storage (Download,
     Documents and so on) appears to Chrome as `/root/Phone`, for example to load
@@ -111,23 +110,30 @@ adb install -r chromedeck.apk
     software, and 30 fps uses 20–40% less CPU than the display's maximum.
     Choose 60 fps or **Display maximum** for smoother scrolling and animation.
     Applies after restarting the app.
-- **External display:** turn on **Developer options → Force desktop mode** and
-  **Enable freeform windows**, restart the phone, and connect the monitor
-  **after** the phone has started (a monitor connected during startup stays
-  disabled until it is reconnected). With **Preferences → Browser → Open on
-  external display automatically** (on by default) Chrome then fills the monitor
-  without a window caption, and returns to the phone when the monitor
-  disconnects, without restarting. Meanwhile the phone screen is dark and works
-  as a touchpad, and the keyboard and mouse control Chrome on the monitor.
-  **Phone screen on** in the app's notification, or the **Phone screen off**
-  Quick Settings tile, lets you use other apps on the phone while Chrome stays on
-  the monitor; the mouse then belongs to the phone until you switch back. The
-  phone stays awake while Chrome is on the monitor, because the monitor sleeps
-  together with the phone screen; the power button still puts both to sleep.
-  The top right corner of the monitor shows the phone's battery level and the
-  time over Chrome's window buttons; **Preferences → Browser → Battery and clock
-  on external display** turns it off, and **Battery and clock height** matches it
-  to Chrome's tab strip at another display scale.
+- **External display:** connect a monitor (USB-C or HDMI). When ChromeDeck starts
+  with a monitor connected, or a monitor connects while it runs, it asks whether
+  to **Switch to desktop** or **Keep mirroring**. On the desktop, Chrome fills the
+  monitor without a window caption and returns to the phone when the monitor
+  disconnects, without restarting. **Remember this choice** saves the answer;
+  **Preferences → Browser → Show Chrome on a connected monitor** (Ask / Always /
+  Never) changes it later, and **Desktop** / **Mirroring** in the app's
+  notification switch for the current connection; while Chrome is on the monitor
+  the notification also offers **Use touchpad** / **Use phone**. On the test phone
+  this works in normal mirroring mode; Developer options' desktop mode is not
+  needed. If a monitor that was connected while the phone started is not offered,
+  reconnect it. Meanwhile the phone screen is dark and works as a touchpad, and
+  the keyboard and mouse control Chrome on the monitor. A row of faint buttons at
+  the top of the touchpad opens Settings, the on-screen keyboard, the phone for
+  other apps, and Exit (after a confirmation). The phone button, **Use phone** in
+  the notification, or the **Phone screen off** Quick Settings tile lets you use
+  other apps on the phone while Chrome stays on the monitor; the mouse then
+  belongs to the phone until you switch back. The phone stays awake while Chrome
+  is on the monitor, because the monitor sleeps together with the phone screen;
+  the power button still puts both to sleep. The top right corner of the monitor
+  shows the phone's battery level and the time over Chrome's window buttons;
+  **Preferences → Browser → Battery and clock on external display** turns it off,
+  and **Battery and clock height** matches it to Chrome's tab strip at another
+  display scale.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
@@ -191,12 +197,14 @@ Many phones end the whole app at once when it is swiped away from recent apps.
 Chrome reopens the tabs it had saved by then, which may miss the last few seconds
 of browsing.
 
-### External display needs desktop mode
+### External display
 
-In mirroring mode the phone's own HDMI mirroring owns the monitor and apps
-cannot draw on it, so Developer options' desktop mode is required. The mouse
-can only control Chrome on the monitor while ChromeDeck is in front on the
-phone. In desktop mode Android opens the recent-apps switcher on the monitor,
+ChromeDeck shows Chrome on a monitor through Android's presentation display
+support. The test phone hands a mirrored monitor over to it, and gives it back to
+mirroring when Chrome returns to the phone; phones that do not offer the monitor
+to apps need their desktop mode (Developer options → Force desktop mode, or
+Samsung DeX and similar) or cannot show Chrome there. The mouse can only control
+Chrome on the monitor while ChromeDeck is in front on the phone. In desktop mode Android opens the recent-apps switcher on the monitor,
 so swiping up and holding on the phone does not show it there while a monitor
 is connected, with or without ChromeDeck.
 

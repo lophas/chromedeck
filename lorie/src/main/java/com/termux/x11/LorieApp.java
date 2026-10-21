@@ -188,6 +188,10 @@ public class LorieApp extends Application {
                 Log.d("ACTION_CUSTOM", "action " + intent.getStringExtra("what"));
                 if (activity != null && "togglePhoneScreenOff".equals(intent.getStringExtra("what")))
                     activity.togglePhoneScreenOff();
+                else if (activity != null && "showOnMonitor".equals(intent.getStringExtra("what")))
+                    activity.setPresentationChoice(true);
+                else if (activity != null && "showOnPhone".equals(intent.getStringExtra("what")))
+                    activity.setPresentationChoice(false);
                 else if (activity != null)
                     activity.mInputHandler.extractUserActionFromPreferences(activity.prefs, intent.getStringExtra("what")).accept(0, true);
                 break;
