@@ -87,7 +87,12 @@ player. In software rendering this keeps Chrome's single-threaded compositor
 fully busy. A 1080p30 AV1 video on youtube.com dropped 13–44% of its frames
 with Ambient mode (compositor thread at about 84% of a core) and 1.2% without
 it; the AV1 decoder threads used about 7% each. VP9 instead of AV1 did not
-help (29%). Turn Ambient mode off in the player settings.
+help (29%). Turn Ambient mode off in the player settings. A later measurement on a
+2560×1080 monitor at the 30 fps default showed about the same total CPU use with
+and without Ambient mode (about 150% of a core); dropped frames were not measured
+there. A built-in extension to turn it off was considered and not added: Google
+Chrome no longer accepts `--load-extension`, and the README recommendation is
+enough.
 
 ## GPU rendering status
 
