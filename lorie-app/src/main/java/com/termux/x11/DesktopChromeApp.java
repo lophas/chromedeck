@@ -103,9 +103,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         } catch (IOException error) {
             Log.w(TAG, "Cannot record the window's display", error);
         }
-        if (external)
-            PhoneScreenOffActivity.show(this);
-        else
+        if (!external)
             PhoneScreenOffActivity.dismiss();
         windows++;
         prepareAndBind();
