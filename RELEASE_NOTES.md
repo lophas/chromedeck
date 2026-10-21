@@ -1,6 +1,30 @@
-# Desktop Chrome Android 0.2.1 — Preview
+# Desktop Chrome Android 0.2.2 — Preview
 
-## New in 0.2.1
+## New in 0.2.2
+
+- **External monitor in Android's desktop mode:** with **Developer options →
+  Force desktop mode** and **Enable freeform windows** on, Chrome moves to a
+  connected monitor automatically, maximized at its full 16:9 resolution, and
+  returns to the phone when the monitor disconnects (**Preferences → Browser →
+  Open on external display automatically**). Tapping the app icon returns the
+  keyboard and mouse to the monitor after using the phone.
+- **Mouse on the monitor:** the window captures the mouse there, so it keeps
+  working on the monitor while the phone is used by touch.
+- **Display scale:** separate settings for the phone screen and external displays
+  render Chrome larger at full sharpness, like a HiDPI display.
+- **Phone screen off:** the notification (tap it) or a Quick Settings tile darkens
+  the phone screen while Chrome is on the monitor; tap the black screen to return.
+- The phone stays awake while Chrome is on the monitor, because the monitor sleeps
+  together with the phone screen. Chrome starts below the desktop-mode window
+  caption, which the app cannot hide.
+
+Install over 0.2.1 or 0.2.0 without uninstalling; the browser profile is kept.
+The app icon is a new launcher entry, so re-add it to the home screen if it
+disappears.
+
+## 0.2.1
+
+### New in 0.2.1
 
 - **Battery-friendly rendering:** a new **Preferences → Browser → Frame rate**
   setting, 30 fps by default (also 60 fps or the display maximum). Chrome renders
