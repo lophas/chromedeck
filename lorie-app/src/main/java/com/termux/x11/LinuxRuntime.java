@@ -16,6 +16,8 @@ public final class LinuxRuntime {
     public static File rootfs(Context context) { return new File(context.getFilesDir(), "debian"); }
     public static File tmp(Context context) { return new File(context.getFilesDir(), "runtime/tmp"); }
     public static File log(Context context) { return new File(context.getFilesDir(), "runtime/chrome-session.log"); }
+    /** "external" when the browser window opened on an external display. */
+    public static File displayKind(Context context) { return new File(context.getFilesDir(), "runtime/display-kind"); }
     /** Written after a failed accelerated start; selects the conservative ptrace-only path. */
     public static File seccompOptOut(Context context) { return new File(context.getFilesDir(), "runtime/disable-proot-seccomp"); }
     public static boolean seccompEnabled(Context context) { return !seccompOptOut(context).exists(); }
@@ -131,9 +133,10 @@ public final class LinuxRuntime {
 
     public static Process startSession(Context context, boolean audioEnabled) throws Exception {
         configureDns(context);
-        // Preferences → Browser → Display scale; read when the session starts.
+        // Preferences → Browser → Display scale for the display the window opened on.
+        boolean external = readTail(displayKind(context), 64).trim().equals("external");
         String scale = context.getSharedPreferences(context.getPackageName() + "_preferences",
-                Context.MODE_PRIVATE).getString("chromeScale", "auto");
+                Context.MODE_PRIVATE).getString(external ? "chromeScaleExternal" : "chromeScale", "auto");
         if (!scale.matches("auto|[0-9]+(\\.[0-9]+)?"))
             scale = "auto";
         ProcessBuilder builder = command(context,

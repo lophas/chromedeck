@@ -34,6 +34,8 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Touch and keyboard controls:** a configurable extra key bar with Esc, Ctrl,
   Alt and navigation keys that hides itself when an external keyboard is connected.
 - **Fullscreen mode** without Android's status and navigation bars.
+- **External displays:** move the browser to a connected monitor in Android's
+  desktop mode, maximized, with its own display scale.
 - **Copyable diagnostics** when startup or a browser session fails.
 
 ## Requirements
@@ -101,6 +103,17 @@ adb install -r desktop-chrome-debug.apk
     software, and 30 fps uses 20–40% less CPU than the display's maximum.
     Choose 60 fps or **Display maximum** for smoother scrolling and animation.
     Applies after restarting the app.
+- **External display:** with a monitor connected in mirroring mode, Android shows
+  the phone screen's shape on it. To fill a 16:9 monitor, turn on **Developer
+  options → Force desktop mode** and **Enable freeform windows**, restart the phone
+  and connect the monitor. Then choose **Preferences → Browser → Move to external
+  display** (or the same button in the app's notification): the window opens
+  maximized on the monitor, and **Move to phone screen** brings it back. Chrome
+  restarts on each move and reopens its tabs.
+- **Display scale:** **Preferences → Browser → Display scale — phone screen** and
+  **— external display** make Chrome's interface and pages larger at full
+  sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
+  on.
 - **Tabs after a restart:** each profile starts set to Chrome's **On startup →
   Continue where you left off**, so the last session reopens without a crash
   prompt. You can change this in Chrome's settings.

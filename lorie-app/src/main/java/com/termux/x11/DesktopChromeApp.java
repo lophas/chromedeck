@@ -73,6 +73,13 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
+        // Offer moving the window when an external display connects or disconnects.
+        ((android.hardware.display.DisplayManager) getSystemService(DISPLAY_SERVICE)).registerDisplayListener(
+                new android.hardware.display.DisplayManager.DisplayListener() {
+                    @Override public void onDisplayAdded(int id) { refreshNotificationIfShown(); }
+                    @Override public void onDisplayRemoved(int id) { refreshNotificationIfShown(); }
+                    @Override public void onDisplayChanged(int id) {}
+                }, main);
         IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
         if (Build.VERSION.SDK_INT >= 33)
             registerReceiver(sessionState, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -82,6 +89,13 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
 
     @Override public void onActivityCreated(Activity activity, Bundle state) {
         if (!(activity instanceof MainActivity)) return;
+        // The browser session picks the display scale of the display it starts on.
+        try {
+            LinuxRuntime.writeText(LinuxRuntime.displayKind(this),
+                    ((MainActivity) activity).isOnExternalDisplay() ? "external\n" : "builtin\n");
+        } catch (IOException error) {
+            Log.w(TAG, "Cannot record the window's display", error);
+        }
         windows++;
         prepareAndBind();
     }

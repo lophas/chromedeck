@@ -583,6 +583,18 @@ public class TouchInputHandler {
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
             builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
 
+        if (ctx instanceof MainActivity && MainActivity.externalDisplayId(ctx) != Display.INVALID_DISPLAY) {
+            MainActivity activity = (MainActivity) ctx;
+            builder.addAction(0, ctx.getString(activity.isOnExternalDisplay()
+                    ? com.termux.x11.R.string.lorie_notification_move_to_phone_screen
+                    : com.termux.x11.R.string.lorie_notification_move_to_external_display),
+                    PendingIntent.getBroadcast(ctx, 3, new Intent(MainActivity.ACTION_CUSTOM) {{
+                        putExtra("what", "moveDisplay");
+                        putExtra(CmdEntryPoint.EXTRA_DOCUMENT_TAG, activity.getTag());
+                        setPackage(ctx.getPackageName());
+                    }}, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        }
+
         return builder;
     }
 

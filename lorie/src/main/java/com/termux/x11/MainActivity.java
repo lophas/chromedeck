@@ -1310,6 +1310,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static native void nativeSetLaunchWindowingModeFreeform(Object activityOptions);
+    private static native void nativeSetLaunchWindowingMode(Object activityOptions, int windowingMode);
+    private static final int WINDOWING_MODE_FULLSCREEN = 1;
+
+    /** The first external display that can show app windows, or Display.INVALID_DISPLAY. */
+    public static int externalDisplayId(Context ctx) {
+        for (Display d : ((DisplayManager) ctx.getSystemService(Context.DISPLAY_SERVICE)).getDisplays())
+            if (d.getDisplayId() != Display.DEFAULT_DISPLAY && (d.getFlags() & Display.FLAG_PRESENTATION) != 0
+                    && (d.getFlags() & Display.FLAG_PRIVATE) == 0)
+                return d.getDisplayId();
+        return Display.INVALID_DISPLAY;
+    }
+
+    public boolean isOnExternalDisplay() {
+        return getWindowManager().getDefaultDisplay().getDisplayId() != Display.DEFAULT_DISPLAY;
+    }
+
+    /**
+     * Moves this single-instance window between the phone screen and an external display,
+     * maximized. Android recreates the window there and the browser session restarts.
+     */
+    void moveToOtherDisplay() {
+        int target = isOnExternalDisplay() ? Display.DEFAULT_DISPLAY : externalDisplayId(this);
+        if (target == Display.INVALID_DISPLAY)
+            return;
+        ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(target);
+        nativeSetLaunchWindowingMode(opts, WINDOWING_MODE_FULLSCREEN);
+        startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), opts.toBundle());
+    }
 
     static {
         System.loadLibrary("Xlorie");
