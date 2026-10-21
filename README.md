@@ -194,6 +194,8 @@ Playback only; there is no microphone input. Details: [audio notes](docs/AUDIO.m
 D-Bus, udev and similar errors in `files/runtime/chrome-session.log` also appear in
 working sessions. Use **Copy details** in the error dialog when reporting a problem.
 
+Planned work and postponed ideas are listed in the [roadmap](docs/ROADMAP.md).
+
 ## Development
 
 Builds use JDK 21, Android SDK 34 and NDK **29.0.14206865** on a Debian x86_64 host:
