@@ -106,6 +106,23 @@ adb install -r desktop-chrome-debug.apk
 Chrome's Memory Saver at `chrome://settings/performance` can deactivate unused
 tabs. It can reduce resource usage but is not a hard process cap.
 
+## Browser settings
+
+**Preferences → Browser** contains the Desktop Chrome runtime options:
+
+- **Fast system calls (PRoot acceleration)** — on by default. It makes video
+  playback and browsing much faster. If Chrome fails to start with it, the app
+  turns it off automatically and says so here. Turn it off manually if Chrome
+  crashes or misbehaves. Changes apply after restarting the app. See
+  [video and GPU notes](docs/GPU-VIDEO.md).
+- **Update Chrome automatically** — on by default. Linux Chrome has no built-in
+  updater; Google publishes updates through its signed APT repository. Before
+  Chrome starts, at most about once a day, the app installs a newer
+  `google-chrome-stable` from that repository. A failed check is logged in
+  `files/runtime/setup.log` and the installed Chrome starts normally. The
+  installed version is shown below the switch. A Chrome version pinned by a
+  later APK is treated as a minimum and never downgrades a newer installation.
+
 ## Keyboard toolbar
 
 The **extra key bar** is the toolbar containing Escape, Ctrl, Alt and navigation

@@ -46,6 +46,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.Preference.OnPreferenceChangeListener;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SeekBarPreference;
+import androidx.preference.SwitchPreferenceCompat;
 
 import android.provider.Settings;
 import android.text.Spannable;
@@ -67,11 +68,15 @@ import com.termux.x11.utils.KeyInterceptor;
 import com.termux.x11.utils.SamsungDexUtils;
 import com.termux.x11.utils.TermuxX11ExtraKeys;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Scanner;
@@ -384,6 +389,62 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             setVisible("requestNotificationPermission", requestNotificationPermissionVisible);
 
             updateScreenIdleTimeoutSummary();
+            updateBrowserPreferences();
+        }
+
+        // Desktop Chrome runtime options are opt-out marker files that the browser
+        // runtime reads; the automatic PRoot fallback writes the same marker.
+        private static final String PROOT_OPT_OUT = "disable-proot-seccomp";
+        private static final String CHROME_UPDATE_OPT_OUT = "disable-chrome-update";
+
+        private File runtimeFile(String name) {
+            return new File(requireContext().getFilesDir(), "runtime/" + name);
+        }
+
+        private static String readText(File file) {
+            try {
+                return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).trim();
+            } catch (IOException e) {
+                return "";
+            }
+        }
+
+        private void updateBrowserPreferences() {
+            SwitchPreferenceCompat acceleration = findPreference("prootAcceleration");
+            if (acceleration != null) {
+                File optOut = runtimeFile(PROOT_OPT_OUT);
+                acceleration.setChecked(!optOut.exists());
+                acceleration.setSummary(optOut.exists() && readText(optOut).startsWith("Accelerated session")
+                        ? R.string.lorie_pref_prootAcceleration_autoDisabled
+                        : R.string.lorie_pref_prootAcceleration_summary);
+            }
+
+            SwitchPreferenceCompat update = findPreference("chromeAutoUpdate");
+            if (update != null) {
+                update.setChecked(!runtimeFile(CHROME_UPDATE_OPT_OUT).exists());
+                String version = readText(runtimeFile("chrome-version"));
+                String summary = getString(R.string.lorie_pref_chromeAutoUpdate_summary);
+                update.setSummary(version.isEmpty() ? summary : summary + "\nInstalled: " + version);
+            }
+        }
+
+        private boolean setRuntimeOptOut(String name, boolean optOut, String reason) {
+            File file = runtimeFile(name);
+            try {
+                if (optOut) {
+                    File parent = file.getParentFile();
+                    if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+                        throw new IOException("Cannot create " + parent);
+                    Files.write(file.toPath(), (reason + "\n").getBytes(StandardCharsets.UTF_8));
+                } else {
+                    Files.deleteIfExists(file.toPath());
+                }
+                return true;
+            } catch (IOException e) {
+                Log.e("Preferences", "Cannot update " + file, e);
+                Toast.makeText(getActivity(), "Cannot save this setting", Toast.LENGTH_SHORT).show();
+                return false;
+            }
         }
 
         private static String formatTimeout(long timeoutMs) {
@@ -502,6 +563,16 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                     Toast.makeText(getActivity(), "Wrong resolution format", Toast.LENGTH_SHORT).show();
                     return false;
                 }
+            }
+
+            if ("prootAcceleration".contentEquals(key) || "chromeAutoUpdate".contentEquals(key)) {
+                boolean enabled = (Boolean) newValue;
+                boolean saved = "prootAcceleration".contentEquals(key)
+                        ? setRuntimeOptOut(PROOT_OPT_OUT, !enabled, "Disabled in Preferences")
+                        : setRuntimeOptOut(CHROME_UPDATE_OPT_OUT, !enabled, "Disabled in Preferences");
+                if (saved && "prootAcceleration".contentEquals(key))
+                    Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
+                return saved;
             }
 
             if ("showAdditionalKbd".contentEquals(key) && (Boolean) newValue)

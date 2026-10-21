@@ -3,11 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceScreen app:key="main" app:title="@string/lorie_pref_main">
+        <Preference app:title="@string/lorie_pref_browser" app:fragment="browser" />
         <Preference app:title="@string/lorie_pref_output" app:fragment="output" />
         <Preference app:title="@string/lorie_pref_pointer" app:fragment="pointer" />
         <Preference app:title="@string/lorie_pref_kbd" app:fragment="kbd" />
         <Preference app:title="@string/lorie_pref_other" app:fragment="other" />
         <Preference app:key="version" app:title="@string/lorie_pref_version" />
+    </PreferenceScreen>
+    <!-- Stored as files in the app's runtime directory, read by the browser runtime. -->
+    <PreferenceScreen app:key="browser">
+        <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
+        <SwitchPreferenceCompat app:key="chromeAutoUpdate" app:defaultValue="true" app:persistent="false" />
     </PreferenceScreen>
     <PreferenceScreen app:key="output">
         <ListPreference app:key="displayResolutionMode" app:defaultValue="native" app:entries="@array/displayResolutionVariants" app:entryValues="@array/displayResolutionVariants"  />

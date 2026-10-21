@@ -31,13 +31,10 @@ From version code 34 the browser session uses the accelerated path by default.
 Package installation still uses the conservative path. If an accelerated
 session exits with an error within 20 seconds, the app writes
 `files/runtime/disable-proot-seccomp`, retries once without acceleration, and
-keeps that choice. To force the conservative path manually:
-
-```bash
-adb shell run-as hu.lophas.desktopchromeandroid touch files/runtime/disable-proot-seccomp
-```
-
-Delete the file to return to the default.
+keeps that choice. **Preferences → Browser → Fast system calls (PRoot
+acceleration)** shows that state and turns acceleration off or back on; the
+change applies after restarting the app. The switch stores the same
+`files/runtime/disable-proot-seccomp` marker.
 
 ## Hardware video decoding
 

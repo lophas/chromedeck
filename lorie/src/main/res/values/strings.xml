@@ -35,6 +35,13 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_main">Preferences</string>
     <string name="lorie_pref_output">Output</string>
     <string name="lorie_pref_pointer">Pointer</string>
+    <string name="lorie_pref_browser">Browser</string>
+    <string name="lorie_pref_prootAcceleration">Fast system calls (PRoot acceleration)</string>
+    <string name="lorie_pref_prootAcceleration_summary">Smoother video and faster browsing. Turn off if Chrome crashes or misbehaves. Applies after restarting the app.</string>
+    <string name="lorie_pref_prootAcceleration_autoDisabled">Turned off automatically after Chrome failed to start with it. Turn on to try again; applies after restarting the app.</string>
+    <string name="lorie_pref_chromeAutoUpdate">Update Chrome automatically</string>
+    <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
+    <string name="lorie_pref_restartToApply">Restart the app to apply this change.</string>
     <string name="lorie_pref_kbd">Keyboard</string>
     <string name="lorie_pref_other">Other</string>
     <string name="lorie_pref_version">Version</string>
