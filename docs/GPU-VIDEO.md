@@ -54,6 +54,25 @@ to 30 fps (**Preferences → Browser → Frame rate**). The same setting asks
 Android to run the display at that rate for the app. Chrome reads the rate when
 it starts, so a change applies after restarting the app.
 
+## Rendering while Chrome cannot be seen
+
+Android stops a phone browser's drawing when it goes to the background; Linux
+Chrome cannot tell that the app is hidden. ChromeDeck therefore minimizes
+Chrome's window when the app leaves the screen (after 3 seconds, so quick app
+switches do not redraw Chrome) or when the screens turn off, and restores it when
+the app returns. While Chrome is on a monitor it stays visible until the screens
+turn off. A minimized Chrome stops drawing pages and slows down their timers;
+audio keeps playing. Measured with Chrome on a 2560×1080 monitor at 30 fps, all
+app processes, in percent of one core:
+
+| Scenario | Visible | Minimized |
+| --- | --- | --- |
+| Idle, about 20 tabs | 19–23% | 14–16% |
+| YouTube 1080p video | 110–150% | 53–54% |
+| YouTube 1080p video, Ambient mode | 150% | 45–50% |
+
+The remaining cost of a minimized video is audio decoding and output.
+
 ## Hardware video decoding
 
 Not available. Linux Chrome decodes in hardware only through VA-API or V4L2

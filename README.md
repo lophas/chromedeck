@@ -27,7 +27,7 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Smooth video:** fast PRoot system calls let Chrome play 1080p60 video on the
   test phone with software decoding.
 - **Battery-friendly rendering:** a 30 fps default frame rate, adjustable in the
-  app's settings.
+  app's settings, and Chrome stops drawing pages while it cannot be seen.
 - **Audio playback** through Android's media output.
 - **Phone storage in Chrome** at `/root/Phone`, for files and unpacked extensions.
 - **Persistent profile:** settings, sign-ins and extensions survive restarts and

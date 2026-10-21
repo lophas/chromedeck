@@ -12,10 +12,12 @@ import android.app.ActivityOptions;
 import android.app.AppOpsManager;
 import android.app.PictureInPictureParams;
 import android.app.Presentation;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -30,6 +32,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -86,6 +89,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.TreeSet;
 
 @Keep @SuppressLint("ApplySharedPref")
@@ -366,6 +370,9 @@ public class MainActivity extends AppCompatActivity {
 
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         displayManager.registerDisplayListener(presentationDisplayListener, handler);
+        registerReceiver(screenStateReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF) {{
+            addAction(Intent.ACTION_SCREEN_ON);
+        }});
         handler.post(this::updatePresentation);
         orientationListener = new OrientationEventListener(this) {
             @Override public void onOrientationChanged(int orientation) {
@@ -428,8 +435,61 @@ public class MainActivity extends AppCompatActivity {
         @Override public void onDisplayChanged(int displayId) { updatePresentation(); }
     };
 
+    /** Set by the app to minimize Chrome while nobody can see it. */
+    public static Consumer<Boolean> browserVisibilityListener;
+    private boolean started;
+    private Boolean browserVisible;
+    private final Runnable hideBrowser = () -> setBrowserVisible(false);
+
+    private final BroadcastReceiver screenStateReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            updateBrowserVisibility();
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        started = true;
+        updateBrowserVisibility();
+    }
+
+    @Override
+    protected void onStop() {
+        started = false;
+        updateBrowserVisibility();
+        super.onStop();
+    }
+
+    /**
+     * Chrome is visible while this window is on screen, or while it is on a monitor and
+     * the screens are on. A minimized Chrome stops drawing pages, as it would on a phone.
+     * Hiding waits a few seconds, so that quickly switching apps does not redraw Chrome.
+     */
+    void updateBrowserVisibility() {
+        if (redirected)
+            return;
+        boolean interactive = ((PowerManager) getSystemService(POWER_SERVICE)).isInteractive();
+        handler.removeCallbacks(hideBrowser);
+        if (interactive && (started || presentation != null))
+            setBrowserVisible(true);
+        else
+            handler.postDelayed(hideBrowser, interactive ? 3000 : 0);
+    }
+
+    private void setBrowserVisible(boolean visible) {
+        if (Boolean.valueOf(visible).equals(browserVisible))
+            return;
+        browserVisible = visible;
+        if (browserVisibilityListener != null)
+            browserVisibilityListener.accept(visible);
+    }
+
     @Override
     protected void onDestroy() {
+        if (!redirected)
+            unregisterReceiver(screenStateReceiver);
+        handler.removeCallbacks(hideBrowser);
         if (displayManager != null)
             displayManager.unregisterDisplayListener(presentationDisplayListener);
         if (presentation != null)
@@ -1443,6 +1503,7 @@ public class MainActivity extends AppCompatActivity {
             imeProxy.requestFocus();
             applyScreenIdleTimeout();
             setCapturingEnabled(true);
+            updateBrowserVisibility();
         } else if (!wanted && presentation != null) {
             presentation.dismiss();
         }
@@ -1473,6 +1534,7 @@ public class MainActivity extends AppCompatActivity {
         applyContentInsets();
         applyScreenIdleTimeout();
         app.refreshNotificationIfShown();
+        updateBrowserVisibility();
     }
 
     /** Shows or hides the battery and clock box on the monitor. */

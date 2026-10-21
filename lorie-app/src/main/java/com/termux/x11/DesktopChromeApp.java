@@ -75,6 +75,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
+        MainActivity.browserVisibilityListener = visible -> LinuxRuntime.writeBrowserVisibility(this, visible);
         IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
         if (Build.VERSION.SDK_INT >= 33)
             registerReceiver(sessionState, filter, Context.RECEIVER_NOT_EXPORTED);

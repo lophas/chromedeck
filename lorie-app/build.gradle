@@ -35,7 +35,7 @@ android {
         applicationId "hu.lophas.desktopchromeandroid"
         minSdkVersion 26
         targetSdkVersion 28
-        versionCode 64
+        versionCode 65
         versionName termuxX11VersionName
     }
 

@@ -19,10 +19,23 @@ if [ "${DESKTOP_CHROME_TOP_MARGIN:-0}" -gt 0 ] 2>/dev/null; then
 fi
 openbox --sm-disable --config-file "$openbox_config" &
 wm_pid=$!
+# ChromeDeck writes "hidden" or "visible" to this pipe when it leaves or returns to the
+# screen. Minimized Chrome stops drawing pages and slows down timers, as Chrome on a
+# phone does in the background; audio keeps playing.
+visibility_pipe=/tmp/desktop-chrome-visibility
+rm -f "$visibility_pipe"
+mkfifo -m 600 "$visibility_pipe"
+while :; do
+    while read -r state; do
+        python3 /usr/local/lib/desktop-chrome/window-visibility.py "$state" \
+            || echo "Cannot change Chrome's window visibility" >&2
+    done < "$visibility_pipe"
+done &
+visibility_pid=$!
 chrome_pid=
 # The Android service reads this PID to stop Chrome gracefully.
 pid_file=/tmp/desktop-chrome-browser.pid
-trap 'audio_stop; kill "$wm_pid" 2>/dev/null || true; rm -f "$pid_file"' EXIT
+trap 'audio_stop; kill "$wm_pid" "$visibility_pid" 2>/dev/null || true; rm -f "$pid_file" "$visibility_pipe"' EXIT
 # Let Chrome save its session before the session ends.
 trap 'if [ -n "$chrome_pid" ]; then kill -TERM "$chrome_pid" 2>/dev/null; wait "$chrome_pid"; fi; exit 143' HUP INT TERM
 . /usr/local/lib/desktop-chrome-audio/session.sh

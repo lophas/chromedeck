@@ -4,6 +4,9 @@ package com.termux.x11;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
+import android.system.ErrnoException;
+import android.system.Os;
+import android.system.OsConstants;
 import java.io.*;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -175,6 +178,26 @@ public final class LinuxRuntime {
             input.readFully(bytes);
             return new String(bytes, StandardCharsets.UTF_8);
         } catch (IOException e) { return e.toString(); }
+    }
+
+    /**
+     * Tells the browser session whether ChromeDeck can be seen, through a pipe that the
+     * session script reads; Chrome is minimized while it cannot. Nothing happens when no
+     * session is running.
+     */
+    public static void writeBrowserVisibility(Context context, boolean visible) {
+        File pipe = new File(tmp(context), "desktop-chrome-visibility");
+        byte[] line = (visible ? "visible\n" : "hidden\n").getBytes(StandardCharsets.UTF_8);
+        try {
+            FileDescriptor fd = Os.open(pipe.getPath(), OsConstants.O_WRONLY | OsConstants.O_NONBLOCK, 0);
+            try {
+                Os.write(fd, line, 0, line.length);
+            } finally {
+                Os.close(fd);
+            }
+        } catch (ErrnoException | InterruptedIOException ignored) {
+            // No session is reading the pipe.
+        }
     }
 
     public static void writeText(File file, String text) throws IOException {

@@ -66,6 +66,9 @@ public final class RuntimeInstaller {
             LinuxRuntime.writeText(launcher, read(input));
         }
         android.system.Os.chmod(launcher.getAbsolutePath(), 0755);
+        try (InputStream input = context.getAssets().open("window-visibility.py")) {
+            LinuxRuntime.writeText(new File(root, "usr/local/lib/desktop-chrome/window-visibility.py"), read(input));
+        }
         LinuxRuntime.configureDns(context);
         JSONObject chrome = manifest.getJSONObject("chrome");
         String chromeSha = chrome.getString("sha256");
