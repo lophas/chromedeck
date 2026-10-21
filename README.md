@@ -106,13 +106,14 @@ adb install -r desktop-chrome-debug.apk
 - **External display:** with a monitor connected in mirroring mode, Android shows
   the phone screen's shape on it. To fill a 16:9 monitor, turn on **Developer
   options → Force desktop mode** and **Enable freeform windows**, restart the phone
-  and connect the monitor. Then choose **Preferences → Browser → Move to external
-  display** (or the same button in the app's notification): the window opens
-  maximized on the monitor, and **Move to phone screen** brings it back. Chrome
-  restarts on each move and reopens its tabs. While the browser is on the monitor
-  the phone stays awake, because the monitor sleeps together with the phone
-  screen; a black cover darkens the phone screen until you tap it. The power
-  button still puts both to sleep.
+  and connect the monitor. With **Preferences → Browser → Open on external display
+  automatically** (on by default) Chrome moves to the monitor maximized when it
+  connects, or opens there; it returns to the phone when the monitor disconnects.
+  Chrome restarts on each move and reopens its tabs. The mouse stays on the
+  monitor while you use the phone by touch; after using the phone, tap the
+  Desktop Chrome icon to give the keyboard back to the monitor. The phone stays
+  awake meanwhile, because the monitor sleeps together with the phone screen; the
+  power button still puts both to sleep.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts

@@ -12,7 +12,7 @@
     </PreferenceScreen>
     <!-- Stored as files in the app's runtime directory, read by the browser runtime. -->
     <PreferenceScreen app:key="browser">
-        <Preference app:key="moveDisplay" app:persistent="false" />
+        <SwitchPreferenceCompat app:key="autoExternalDisplay" app:defaultValue="true" />
         <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
         <SwitchPreferenceCompat app:key="chromeAutoUpdate" app:defaultValue="true" app:persistent="false" />
         <ListPreference app:key="chromeScale" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />

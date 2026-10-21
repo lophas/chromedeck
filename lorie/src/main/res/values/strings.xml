@@ -31,8 +31,6 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_notification_toggle_additional_key_bar">Toggle additional keyboard</string>
     <string name="lorie_notification_release_pointer_and_keyboard_capture">Release captures</string>
     <string name="lorie_notification_toggle_fullscreen">Toggle fullscreen</string>
-    <string name="lorie_notification_move_to_external_display">Move to external display</string>
-    <string name="lorie_notification_move_to_phone_screen">Move to phone screen</string>
 
     <string name="lorie_pref_main">Preferences</string>
     <string name="lorie_pref_output">Output</string>
@@ -43,7 +41,8 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_prootAcceleration_autoDisabled">Turned off automatically after Chrome failed to start with it. Turn on to try again; applies after restarting the app.</string>
     <string name="lorie_pref_chromeAutoUpdate">Update Chrome automatically</string>
     <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
-    <string name="lorie_pref_moveDisplay_summary">Chrome restarts there with that display\'s scale and reopens its tabs.</string>
+    <string name="lorie_pref_autoExternalDisplay">Open on external display automatically</string>
+    <string name="lorie_pref_autoExternalDisplay_summary">When a monitor is connected in desktop mode, Chrome moves there maximized and reopens its tabs.</string>
     <string name="lorie_pref_chromeScale">Display scale — phone screen</string>
     <string name="lorie_pref_chromeScaleExternal">Display scale — external display</string>
     <string name="lorie_pref_frameRateLimit">Frame rate</string>

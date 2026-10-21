@@ -38,13 +38,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.termux.x11.PhoneScreenOffActivity"
-            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
-            android:taskAffinity=".PhoneScreenOff"
-            android:launchMode="singleInstance"
-            android:excludeFromRecents="true"
-            android:exported="false" />
         <service
             android:name="com.termux.x11.EmbeddedX11Service"
             android:process=":xserver"

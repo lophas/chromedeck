@@ -410,17 +410,6 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
         }
 
         private void updateBrowserPreferences() {
-            Preference move = findPreference("moveDisplay");
-            if (move != null) {
-                MainActivity window = MainActivity.getFocusedOrAnyInstance();
-                move.setVisible(window != null
-                        && MainActivity.externalDisplayId(requireContext()) != android.view.Display.INVALID_DISPLAY);
-                if (window != null)
-                    move.setTitle(window.isOnExternalDisplay()
-                            ? R.string.lorie_notification_move_to_phone_screen
-                            : R.string.lorie_notification_move_to_external_display);
-            }
-
             SwitchPreferenceCompat acceleration = findPreference("prootAcceleration");
             if (acceleration != null) {
                 File optOut = runtimeFile(PROOT_OPT_OUT);
@@ -526,14 +515,6 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
         public boolean onPreferenceTreeClick(@NonNull Preference p) {
             if (p.getKey() == null)
                 return super.onPreferenceTreeClick(p);
-
-            if ("moveDisplay".contentEquals(p.getKey())) {
-                MainActivity window = MainActivity.getFocusedOrAnyInstance();
-                if (window != null)
-                    window.moveToOtherDisplay();
-                requireActivity().finish();
-                return true;
-            }
 
             if ("version".contentEquals(p.getKey())) {
                 Context ctx = getContext();

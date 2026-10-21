@@ -75,11 +75,16 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
-        // Offer moving the window when an external display connects or disconnects.
+        // Preferences → Browser → Open on external display automatically. Android moves
+        // the window back to the phone itself when the display disconnects.
         ((android.hardware.display.DisplayManager) getSystemService(DISPLAY_SERVICE)).registerDisplayListener(
                 new android.hardware.display.DisplayManager.DisplayListener() {
-                    @Override public void onDisplayAdded(int id) { refreshNotificationIfShown(); }
-                    @Override public void onDisplayRemoved(int id) { refreshNotificationIfShown(); }
+                    @Override public void onDisplayAdded(int id) {
+                        MainActivity window = MainActivity.getFocusedOrAnyInstance();
+                        if (window != null && builtInPrefs.autoExternalDisplay.get())
+                            window.moveToExternalDisplay();
+                    }
+                    @Override public void onDisplayRemoved(int id) {}
                     @Override public void onDisplayChanged(int id) {}
                 }, main);
         IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
@@ -103,8 +108,6 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         } catch (IOException error) {
             Log.w(TAG, "Cannot record the window's display", error);
         }
-        if (!external)
-            PhoneScreenOffActivity.dismiss();
         windows++;
         prepareAndBind();
     }

@@ -1343,17 +1343,21 @@ public class MainActivity extends AppCompatActivity {
         return getWindowManager().getDefaultDisplay().getDisplayId() != Display.DEFAULT_DISPLAY;
     }
 
-    /**
-     * Moves this single-instance window between the phone screen and an external display,
-     * maximized. Android recreates the window there and the browser session restarts.
-     */
-    void moveToOtherDisplay() {
-        int target = isOnExternalDisplay() ? Display.DEFAULT_DISPLAY : externalDisplayId(this);
-        if (target == Display.INVALID_DISPLAY)
-            return;
-        ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(target);
+    /** Options that open the single-instance window maximized on the given display. */
+    public static Bundle launchOptions(int displayId) {
+        ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId);
         nativeSetLaunchWindowingMode(opts, WINDOWING_MODE_FULLSCREEN);
-        startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), opts.toBundle());
+        return opts.toBundle();
+    }
+
+    /**
+     * Moves this window to an external display. Android recreates it there and the
+     * browser session restarts with that display's settings.
+     */
+    public void moveToExternalDisplay() {
+        int target = externalDisplayId(this);
+        if (target != Display.INVALID_DISPLAY && !isOnExternalDisplay())
+            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), launchOptions(target));
     }
 
     static {
