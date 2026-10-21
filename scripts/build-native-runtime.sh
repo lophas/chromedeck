@@ -27,6 +27,8 @@ if [[ ! -x "$CC" ]]; then
     exit 1
 fi
 
+# Never package GPU .so files left by a previous build on this workstation.
+rm -rf "$NATIVE_OUT"
 mkdir -p "$WORK/downloads" "$NATIVE_OUT" "$ASSET_OUT"
 STATIC_ROOT="$WORK/static-$TALLOC_VERSION"
 mkdir -p "$STATIC_ROOT/include" "$STATIC_ROOT/lib"
