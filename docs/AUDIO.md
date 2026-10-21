@@ -1,9 +1,7 @@
-# Audio output experiment
+# Audio output
 
-Branch: `audio-output`. APK version code: **19**. The first device test produced
-audible playback but stuttered; this update's tuning still needs device testing.
-It is separate from the frozen v0.1.0 release. No microphone permission is added;
-microphone input and calls are outside this change.
+Desktop Chrome plays audio through Android. No microphone permission is
+requested; microphone input and calls are not supported.
 
 ## Design
 
@@ -32,12 +30,12 @@ and external-display routes still need device validation.
 
 If the Android receiver or PulseAudio startup fails, the browser can still start
 without audio and logs the failure. A failure after playback starts is logged;
-automatic recovery of a dead audio bridge is not implemented in this first test.
+the audio bridge is not restarted automatically.
 Session shutdown stops the PulseAudio and capture children and closes AudioTrack.
 
-## First launch after updating
+## Installation
 
-The existing Debian installation and Chrome profile are preserved. One-time audio
+One-time audio
 setup uses Debian's configured, signed APT repositories to install `pulseaudio`,
 `pulseaudio-utils` and `libasound2-plugins`; it requires an internet connection.
 These packages are not included in the APK or pinned by the Chrome download
@@ -45,48 +43,9 @@ manifest. Package-install failures show the setup error and require Retry.
 
 The installer also initializes an empty/invalid Debian machine-id with a random
 per-install ID. Audio configuration lives in `/usr/local/lib/desktop-chrome-audio`;
-the PulseAudio and ALSA overrides apply only to the experimental browser session.
+the PulseAudio and ALSA overrides apply only to the browser session.
 
-## Build and upload from the LXC host
-
-From the existing checkout, with any local work committed or saved:
-
-```bash
-git fetch origin
-git switch --track origin/audio-output
-export ANDROID_HOME=/opt/koreader/base/toolchain/android-sdk-linux
-export ANDROID_SDK_ROOT="$ANDROID_HOME"
-./gradlew :lorie-app:assembleStandaloneDebug --console=plain
-```
-
-On subsequent builds use `git switch audio-output` and `git pull --ff-only`.
-
-Publish the test APK after a successful build:
-
-```bash
-gh release create audio-test-002 \
-  lorie-app/build/outputs/apk/standalone/debug/desktop-chrome-debug.apk \
-  --repo lophas/desktop-chrome-android \
-  --target "$(git rev-parse HEAD)" \
-  --title "Desktop Chrome Android - Audio test 002" \
-  --prerelease \
-  --notes "Audio buffering and priming improvements, fewer volume updates, underrun/CPU diagnostics, and an opt-in PRoot fast-path comparison. Device validation required."
-```
-
-Install over the current app without uninstalling or clearing its data.
-
-## Device checks
-
-1. Play a short web video with sound; verify intelligible audio, stereo playback,
-   pause/resume and approximate audio/video synchronization.
-2. Play two tabs simultaneously; confirm their output mixes, then close one.
-3. Pause both for several seconds and resume; confirm there is no stale audio.
-4. Start another media app and return; check focus loss, restoration and volume.
-5. Test the output devices you use, including Bluetooth or an external display.
-6. Close and reopen Desktop Chrome; confirm audio returns and no old server remains.
-7. Record a process measurement while playing audio. The CSV now includes
-   `pulse_servers` and `pcm_readers`, and events include `DesktopChromeAudio` logs.
-   The recording also includes filtered `dumpsys cpuinfo` snapshots in `cpuinfo.txt`.
+## Diagnostics
 
 Diagnostic command on the connected computer:
 
@@ -94,29 +53,10 @@ Diagnostic command on the connected computer:
 adb logcat -b all -d -v threadtime -s DesktopChromeAudio:V DesktopChrome:V
 ```
 
-## PRoot syscall acceleration
+## Tests
 
-From version code 34 the browser session uses PRoot's seccomp filter by default.
-See [video playback and GPU rendering](GPU-VIDEO.md) for the measurements and the
-automatic fallback. The former `enable-proot-seccomp` opt-in file is no longer used.
-
-To roll back the APK with ADB, the public-debug-key builds allow a version-code
-downgrade: `adb install -r -d desktop-chrome-debug.apk` using the **v0.1.0 APK**.
-The installed audio packages remain, but v0.1.0 does not start the bridge.
-
-## Validation available before device testing
-
-- Changed Android classes compile against the verified official SDK 34 API JAR;
-  generated/project-only collaborators were stubbed for this API compilation.
-  This is not a full Gradle APK build.
-- `PcmFramesTest` checks byte-for-byte reconstruction across arbitrary FIFO
-  fragments, reconnection boundaries and signed PCM16 silence detection.
-- Shell syntax checks cover the launcher and audio lifecycle script.
-- `test-audio-session.py` exercises a real Linux PulseAudio monitor, a missing
-  receiver and child cleanup on a host with PulseAudio tools installed. In the
-  current coding environment its real-server step was blocked by a Unix socket
-  permission error; successful transport or audible output is not claimed.
-
+`tests/test-audio-session.py` exercises a real Linux PulseAudio monitor, a
+missing receiver and child cleanup on a host with PulseAudio tools installed.
 To run the portable PCM test on a JDK-equipped host:
 
 ```bash
