@@ -102,6 +102,8 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         // on external displays without reporting it to this app; keep Chrome below it.
         int captionHeight = external
                 ? Math.round(DESKTOP_CAPTION_HEIGHT_DP * activity.getResources().getDisplayMetrics().density) : 0;
+        if (!external)
+            PhoneScreenOffActivity.dismiss();
         try {
             LinuxRuntime.writeText(LinuxRuntime.displayKind(this),
                     (external ? "external " : "builtin ") + captionHeight + "\n");

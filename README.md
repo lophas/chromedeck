@@ -113,7 +113,9 @@ adb install -r desktop-chrome-debug.apk
   monitor while you use the phone by touch; after using the phone, tap the
   Desktop Chrome icon to give the keyboard back to the monitor. The phone stays
   awake meanwhile, because the monitor sleeps together with the phone screen; the
-  power button still puts both to sleep.
+  power button still puts both to sleep. **Phone screen off** in the app's
+  notification, or the Quick Settings tile of the same name, darkens the phone
+  screen until you tap it.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts

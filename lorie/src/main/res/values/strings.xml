@@ -31,6 +31,7 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_notification_toggle_additional_key_bar">Toggle additional keyboard</string>
     <string name="lorie_notification_release_pointer_and_keyboard_capture">Release captures</string>
     <string name="lorie_notification_toggle_fullscreen">Toggle fullscreen</string>
+    <string name="lorie_notification_phone_screen_off">Phone screen off</string>
 
     <string name="lorie_pref_main">Preferences</string>
     <string name="lorie_pref_output">Output</string>

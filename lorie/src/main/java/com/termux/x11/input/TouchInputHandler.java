@@ -585,6 +585,12 @@ public class TouchInputHandler {
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
             builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
 
+        // Desktop Chrome: darken the phone screen while the browser is on a monitor.
+        if (ctx instanceof MainActivity && ((MainActivity) ctx).isOnExternalDisplay())
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_phone_screen_off),
+                    PendingIntent.getActivity(ctx, 3, new Intent().setClassName(ctx, "com.termux.x11.PhoneScreenOffActivity")
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE));
+
         return builder;
     }
 
