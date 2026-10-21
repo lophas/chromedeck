@@ -73,6 +73,16 @@ app processes, in percent of one core:
 
 The remaining cost of a minimized video is audio decoding and output.
 
+## Chrome's Energy saver
+
+Linux Chrome has no battery level provider and always reports mains power, so its
+Energy saver options for low battery or battery power never take effect, and a
+UPower service with the phone's battery would only reach web pages through the
+Battery Status API. Only **Always on** works, made visible by
+`--force-device-has-battery`. Measured on the monitor at 30 fps it made no
+difference: idle 17–28% with it and 21–25% without, YouTube 1080p about 150% in
+both cases. ChromeDeck therefore leaves it alone.
+
 ## Hardware video decoding
 
 Not available. Linux Chrome decodes in hardware only through VA-API or V4L2
