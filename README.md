@@ -191,7 +191,9 @@ of browsing.
 In mirroring mode the phone's own HDMI mirroring owns the monitor and apps
 cannot draw on it, so Developer options' desktop mode is required. The mouse
 can only control Chrome on the monitor while ChromeDeck is in front on the
-phone.
+phone. In desktop mode Android opens the recent-apps switcher on the monitor,
+so swiping up and holding on the phone does not show it there while a monitor
+is connected, with or without ChromeDeck.
 
 ### Audio
 

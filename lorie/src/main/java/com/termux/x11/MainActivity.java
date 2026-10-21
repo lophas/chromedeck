@@ -50,6 +50,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowInsets;
+import android.view.inputmethod.InputMethodManager;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -122,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean oldFullscreen = false, oldHideCutout = false;
     private LorieView mLorieView;
     private Presentation presentation;
+    private ImeProxyView imeProxy;
     private OrientationEventListener orientationListener;
 
     ViewTreeObserver.OnPreDrawListener mOnPredrawListener = new ViewTreeObserver.OnPreDrawListener() {
@@ -910,7 +912,7 @@ public class MainActivity extends AppCompatActivity {
 
         setTerminalToolbarViewLayout();
         // Keys reach the X server through the frame while the view is on the monitor.
-        (presentation != null ? findViewById(R.id.frame) : getLorieView()).requestFocus();
+        (imeProxy != null ? imeProxy : getLorieView()).requestFocus();
     }
 
     // Keep in sync with Surface.ROTATION_*
@@ -1280,6 +1282,18 @@ public class MainActivity extends AppCompatActivity {
     public void toggleKeyboardVisibility() {
         Log.d("MainActivity", "Toggling keyboard visibility");
         LorieView view = getLorieView();
+        if (imeProxy != null) {
+            // The display view is on the monitor; the keyboard opens for the phone window.
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            WindowInsets insets = imeProxy.getRootWindowInsets();
+            if (SDK_INT >= VERSION_CODES.R && insets != null && insets.isVisible(WindowInsets.Type.ime()))
+                imm.hideSoftInputFromWindow(imeProxy.getWindowToken(), 0);
+            else {
+                imeProxy.requestFocus();
+                imm.showSoftInput(imeProxy, 0);
+            }
+            return;
+        }
         if (!externalKeyboardConnected || showIMEWhileExternalConnected)
             view.toggleKeyboardVisible();
         else
@@ -1414,12 +1428,13 @@ public class MainActivity extends AppCompatActivity {
             setTerminalToolbarView();
             applyContentInsets();
             app.refreshNotificationIfShown();
-            // Keys and the captured mouse arrive through this window on the phone.
-            View frame = findViewById(R.id.frame);
-            frame.setFocusable(true);
-            frame.setFocusableInTouchMode(true);
-            frame.setOnKeyListener(mLorieKeyListener);
-            frame.requestFocus();
+            // Keys, the captured mouse and the on-screen keyboard arrive through this window.
+            imeProxy = new ImeProxyView(this, view);
+            imeProxy.setOnKeyListener(mLorieKeyListener);
+            if (SDK_INT >= VERSION_CODES.O)
+                imeProxy.setOnCapturedPointerListener((v, e) -> mInputHandler.handleTouchEvent(view, view, e));
+            ((FrameLayout) findViewById(R.id.frame)).addView(imeProxy, new FrameLayout.LayoutParams(1, 1));
+            imeProxy.requestFocus();
             applyScreenIdleTimeout();
             setCapturingEnabled(true);
         } else if (!wanted && presentation != null) {
@@ -1430,9 +1445,14 @@ public class MainActivity extends AppCompatActivity {
     private void restoreLorieView() {
         if (presentation == null)
             return;
-        // Give the mouse back to Android on the phone screen.
-        if (SDK_INT >= VERSION_CODES.O)
-            findViewById(R.id.frame).releasePointerCapture();
+        // Give the mouse and the on-screen keyboard back to the display view.
+        if (imeProxy != null) {
+            if (SDK_INT >= VERSION_CODES.O)
+                imeProxy.releasePointerCapture();
+            ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(imeProxy.getWindowToken(), 0);
+            ((ViewGroup) imeProxy.getParent()).removeView(imeProxy);
+            imeProxy = null;
+        }
         presentation = null;
         LorieView view = getLorieView();
         view.movingBetweenWindows = true;
@@ -1478,7 +1498,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** The view that holds pointer capture: the display view, or this window's frame while presenting. */
     public View getPointerCaptureView() {
-        return presentation != null ? findViewById(R.id.frame) : getLorieView();
+        return imeProxy != null ? imeProxy : getLorieView();
     }
 
     public boolean isOnExternalDisplay() {
