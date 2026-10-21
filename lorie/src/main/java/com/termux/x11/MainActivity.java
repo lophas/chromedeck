@@ -887,9 +887,11 @@ public class MainActivity extends AppCompatActivity {
         boolean hideForHardwareKeyboard = externalKeyboardConnected
                 && prefs.hideAdditionalKbdWithExternalKeyboard.get()
                 && !Boolean.TRUE.equals(hardwareExtraKeysOverride);
+        // While Chrome is on a monitor the phone is a touchpad, and the key bar there
+        // stays visible: a three-finger swipe on the touchpad would otherwise hide it.
         boolean showNow = !isInPictureInPictureMode && getLorieView().connected()
-                && prefs.showAdditionalKbd.get() && prefs.additionalKbdVisible.get()
-                && !hideForHardwareKeyboard;
+                && prefs.showAdditionalKbd.get()
+                && (presentation != null || (prefs.additionalKbdVisible.get() && !hideForHardwareKeyboard));
 
         pager.setVisibility(showNow ? View.VISIBLE : View.INVISIBLE);
 
@@ -907,7 +909,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setTerminalToolbarViewLayout();
-        getLorieView().requestFocus();
+        // Keys reach the X server through the frame while the view is on the monitor.
+        (presentation != null ? findViewById(R.id.frame) : getLorieView()).requestFocus();
     }
 
     // Keep in sync with Surface.ROTATION_*
@@ -1408,6 +1411,7 @@ public class MainActivity extends AppCompatActivity {
             view.movingBetweenWindows = false;
             presentation.setContentView(container);
             presentation.show();
+            setTerminalToolbarView();
             applyContentInsets();
             app.refreshNotificationIfShown();
             // Keys and the captured mouse arrive through this window on the phone.
@@ -1438,6 +1442,7 @@ public class MainActivity extends AppCompatActivity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
         view.movingBetweenWindows = false;
         view.requestFocus();
+        setTerminalToolbarView();
         applyContentInsets();
         applyScreenIdleTimeout();
         app.refreshNotificationIfShown();
