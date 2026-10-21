@@ -47,8 +47,11 @@ PY
 # Skip the official wrapper's two persistent cat processes.
 # Keep the launch options from the last successful device baseline.
 # The renderer limit is soft: site isolation can require additional processes.
+# PRoot provides no Linux browser sandbox, so --no-sandbox is required; Android's
+# app sandbox still applies. --test-type hides the resulting warning bar.
 /opt/google/chrome/chrome \
     --no-sandbox \
+    --test-type \
     --no-zygote \
     --renderer-process-limit=4 \
     --disable-dev-shm-usage \
