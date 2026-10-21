@@ -1,6 +1,20 @@
-# ChromeDeck 0.3.0 — Preview
+# ChromeDeck 0.3.1 — Preview
 
-## New in 0.3.0
+## Fixes in 0.3.1
+
+- While Chrome is on a monitor, the key bar stays visible on the phone touchpad;
+  a three-finger swipe on the touchpad could hide it.
+- The on-screen keyboard opens on the phone while Chrome is on a monitor, and its
+  input goes to Chrome there. With a hardware keyboard connected, Android shows
+  only a compact keyboard unless **Physical keyboard → Use on-screen keyboard**
+  is on.
+
+Known: in desktop mode Android shows the recent-apps switcher on the monitor, so
+swipe up and hold does not open it on the phone while a monitor is connected.
+
+## 0.3.0
+
+### New in 0.3.0
 
 - **Phone storage in Chrome:** the phone's shared storage (Download, Documents and
   so on) appears to Chrome as `/root/Phone`, so files can be opened and saved there
