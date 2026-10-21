@@ -94,7 +94,7 @@ public final class RuntimeInstaller {
             if (!version.contains("Google Chrome") || !chromeBinary.isFile())
                 throw new IOException("Google Chrome installation did not complete:\n" + version);
             LinuxRuntime.writeText(chromeMarker, chromeSha);
-            LinuxRuntime.writeText(chromeVersion(context), version.trim() + "\n");
+            writeChromeVersion(context, version);
             packageFile.delete();
         }
         updateChrome(context, progress);
@@ -106,6 +106,16 @@ public final class RuntimeInstaller {
     public static File chromeVersion(Context context) { return new File(context.getFilesDir(), "runtime/chrome-version"); }
     public static File chromeUpdateOptOut(Context context) { return new File(context.getFilesDir(), "runtime/disable-chrome-update"); }
     private static final long CHROME_UPDATE_INTERVAL_MS = 20L * 60 * 60 * 1000;
+
+    /** Keeps only the "Google Chrome x.y" line; Chrome also logs warnings to the same output. */
+    private static void writeChromeVersion(Context context, String output) throws IOException {
+        for (String line : output.split("\n")) {
+            if (line.startsWith("Google Chrome")) {
+                LinuxRuntime.writeText(chromeVersion(context), line.trim() + "\n");
+                return;
+            }
+        }
+    }
 
     private static boolean installedChromeAtLeast(Context context, String version) {
         try {
@@ -128,7 +138,7 @@ public final class RuntimeInstaller {
         if (!chromeVersion(context).isFile()) {
             try {
                 String version = LinuxRuntime.runChecked(context, 60, "/opt/google/chrome/chrome", "--version");
-                LinuxRuntime.writeText(chromeVersion(context), version.trim() + "\n");
+                writeChromeVersion(context, version);
             } catch (Exception error) {
                 android.util.Log.w("DesktopChrome", "Cannot read the installed Chrome version.", error);
             }
@@ -152,7 +162,7 @@ public final class RuntimeInstaller {
                     "/usr/bin/apt-get", "-o", "APT::Sandbox::User=root", "install", "--yes",
                     "--only-upgrade", "--no-install-recommends", "google-chrome-stable");
             String version = LinuxRuntime.runChecked(context, 60, "/opt/google/chrome/chrome", "--version");
-            LinuxRuntime.writeText(chromeVersion(context), version.trim() + "\n");
+            writeChromeVersion(context, version);
         } catch (Exception error) {
             android.util.Log.w("DesktopChrome", "Chrome update failed; starting the installed version.", error);
         }
