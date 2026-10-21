@@ -75,18 +75,6 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onCreate() {
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
-        // Preferences → Browser → Open on external display automatically. Android moves
-        // the window back to the phone itself when the display disconnects.
-        ((android.hardware.display.DisplayManager) getSystemService(DISPLAY_SERVICE)).registerDisplayListener(
-                new android.hardware.display.DisplayManager.DisplayListener() {
-                    @Override public void onDisplayAdded(int id) {
-                        MainActivity window = MainActivity.getFocusedOrAnyInstance();
-                        if (window != null && builtInPrefs.autoExternalDisplay.get())
-                            window.moveToExternalDisplay();
-                    }
-                    @Override public void onDisplayRemoved(int id) {}
-                    @Override public void onDisplayChanged(int id) {}
-                }, main);
         IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
         if (Build.VERSION.SDK_INT >= 33)
             registerReceiver(sessionState, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -97,10 +85,11 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
     @Override public void onActivityCreated(Activity activity, Bundle state) {
         if (!(activity instanceof MainActivity)) return;
         // The browser session picks the display scale of the display it starts on.
-        boolean external = ((MainActivity) activity).isOnExternalDisplay();
+        boolean onExternal = ((MainActivity) activity).isOnExternalDisplay();
+        boolean external = onExternal || MainActivity.presentationWanted(this, builtInPrefs);
         // Android's desktop mode draws a window caption bar over the top of the window
         // on external displays without reporting it to this app; keep Chrome below it.
-        int captionHeight = external
+        int captionHeight = onExternal
                 ? Math.round(DESKTOP_CAPTION_HEIGHT_DP * activity.getResources().getDisplayMetrics().density) : 0;
         if (!external)
             PhoneScreenOffActivity.dismiss();
@@ -206,7 +195,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         dismissProgress();
         progressOwner = activity;
         progressDialog = new ProgressDialog(activity);
-        progressDialog.setTitle("Desktop Chrome Android");
+        progressDialog.setTitle("ChromeDeck");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.setMax(100);
         progressDialog.setCancelable(false);
@@ -241,7 +230,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
                 + LinuxRuntime.readTail(new File(getFilesDir(), "runtime/setup.log"), 8192)
                 + "\n\nSession log:\n" + LinuxRuntime.readTail(LinuxRuntime.log(this), 8192);
         errorDialog = new AlertDialog.Builder(activity)
-                .setTitle("Desktop Chrome Android")
+                .setTitle("ChromeDeck")
                 .setMessage(error.getMessage() == null ? error.toString() : error.getMessage())
                 .setPositiveButton("Retry", (dialog, which) -> {
                     releaseServer();
@@ -256,7 +245,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         // Keep Retry visible after copying the diagnostic report.
         errorDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            clipboard.setPrimaryClip(ClipData.newPlainText("Desktop Chrome Android", details));
+            clipboard.setPrimaryClip(ClipData.newPlainText("ChromeDeck", details));
             Toast.makeText(this, "Details copied", Toast.LENGTH_SHORT).show();
         });
     }

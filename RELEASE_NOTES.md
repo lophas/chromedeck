@@ -1,6 +1,25 @@
-# Desktop Chrome Android 0.2.2 — Preview
+# ChromeDeck 0.2.3 — Preview
 
-## New in 0.2.2
+Desktop Chrome Android is now **ChromeDeck**. Install over the previous version;
+the browser profile is kept.
+
+## New in 0.2.3
+
+- **Full-screen monitor mode:** in desktop mode Chrome fills the monitor without a
+  window caption, and moves between the monitor and the phone without restarting.
+  The monitor must be connected after the phone has started.
+- **Phone as touchpad:** while Chrome is on the monitor, the dark phone screen
+  works as a touchpad and the keyboard and mouse control Chrome there.
+- **Phone screen on/off:** the app's notification and the Quick Settings tile
+  switch between the touchpad and using other apps on the phone; Chrome stays on
+  the monitor.
+- **Touchpads and mice:** **Preferences → Pointer → Mouse wheel scroll speed**
+  (50% by default) and **Touchpad pinch zooms** (off by default), which ignores
+  the Ctrl+wheel pinches that some USB touchpads send.
+
+## 0.2.2
+
+### New in 0.2.2
 
 - **External monitor in Android's desktop mode:** with **Developer options →
   Force desktop mode** and **Enable freeform windows** on, Chrome moves to a

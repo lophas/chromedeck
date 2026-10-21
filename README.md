@@ -1,8 +1,8 @@
-# Desktop Chrome Android
+# ChromeDeck
 
 **The desktop edition of Google Chrome, running locally on Android.**
 
-[Download the latest APK](https://github.com/lophas/desktop-chrome-android/releases/latest/download/desktop-chrome-debug.apk)
+[Download the latest APK](https://github.com/lophas/desktop-chrome-android/releases/latest/download/chromedeck.apk)
 · [Release notes](RELEASE_NOTES.md)
 · [All releases](https://github.com/lophas/desktop-chrome-android/releases)
 
@@ -34,8 +34,8 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
 - **Touch and keyboard controls:** a configurable extra key bar with Esc, Ctrl,
   Alt and navigation keys that hides itself when an external keyboard is connected.
 - **Fullscreen mode** without Android's status and navigation bars.
-- **External displays:** move the browser to a connected monitor in Android's
-  desktop mode, maximized, with its own display scale.
+- **External monitor:** Chrome fills a connected monitor in Android's desktop mode,
+  with its own display scale, while the phone screen works as a touchpad.
 - **Copyable diagnostics** when startup or a browser session fails.
 
 ## Requirements
@@ -53,12 +53,12 @@ This is a **preview**. Other devices and Android versions may behave differently
 
 ## Install
 
-1. Download `desktop-chrome-debug.apk` from the
+1. Download `chromedeck.apk` from the
    [latest release](https://github.com/lophas/desktop-chrome-android/releases/latest).
 2. Open the APK and allow installation from that source when Android asks.
 3. **Google Play Protect warns about the app** ("Unsafe app blocked"). Choose
    **More details → Install anyway**. See [Play Protect warning](#play-protect-warning).
-4. Open **Desktop Chrome Android** and keep it in the foreground while it installs
+4. Open **ChromeDeck** and keep it in the foreground while it installs
    Debian and Chrome. It downloads about 380 MB; on a fast connection Chrome
    appears after about a minute. Later launches start directly.
 
@@ -73,7 +73,7 @@ in place: uninstall 0.1.0 once, then install 0.2.0. This deletes the old profile
 With ADB:
 
 ```bash
-adb install -r desktop-chrome-debug.apk
+adb install -r chromedeck.apk
 ```
 
 ## Getting started
@@ -103,19 +103,19 @@ adb install -r desktop-chrome-debug.apk
     software, and 30 fps uses 20–40% less CPU than the display's maximum.
     Choose 60 fps or **Display maximum** for smoother scrolling and animation.
     Applies after restarting the app.
-- **External display:** with a monitor connected in mirroring mode, Android shows
-  the phone screen's shape on it. To fill a 16:9 monitor, turn on **Developer
-  options → Force desktop mode** and **Enable freeform windows**, restart the phone
-  and connect the monitor. With **Preferences → Browser → Open on external display
-  automatically** (on by default) Chrome moves to the monitor maximized when it
-  connects, or opens there; it returns to the phone when the monitor disconnects.
-  Chrome restarts on each move and reopens its tabs. The mouse stays on the
-  monitor while you use the phone by touch; after using the phone, tap the
-  Desktop Chrome icon to give the keyboard back to the monitor. The phone stays
-  awake meanwhile, because the monitor sleeps together with the phone screen; the
-  power button still puts both to sleep. Tapping the app's notification, its
-  **Phone screen off** button or the Quick Settings tile of that name darkens the phone
-  screen until you tap it.
+- **External display:** turn on **Developer options → Force desktop mode** and
+  **Enable freeform windows**, restart the phone, and connect the monitor
+  **after** the phone has started (a monitor connected during startup stays
+  disabled until it is reconnected). With **Preferences → Browser → Open on
+  external display automatically** (on by default) Chrome then fills the monitor
+  without a window caption, and returns to the phone when the monitor
+  disconnects, without restarting. Meanwhile the phone screen is dark and works
+  as a touchpad, and the keyboard and mouse control Chrome on the monitor.
+  **Phone screen on** in the app's notification, or the **Phone screen off**
+  Quick Settings tile, lets you use other apps on the phone while Chrome stays on
+  the monitor; the mouse then belongs to the phone until you switch back. The
+  phone stays awake while Chrome is on the monitor, because the monitor sleeps
+  together with the phone screen; the power button still puts both to sleep.
 - **Display scale:** **Preferences → Browser → Display scale — phone screen** and
   **— external display** make Chrome's interface and pages larger at full
   sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
@@ -170,7 +170,7 @@ Play Protect therefore blocks a fresh installation until you choose
 ### Browser sandbox
 
 Chrome runs with `--no-sandbox` because PRoot cannot provide the Linux browser
-sandbox. Android's app sandbox still separates Desktop Chrome from other apps.
+sandbox. Android's app sandbox still separates ChromeDeck from other apps.
 Chrome's warning bar about the flag is hidden.
 
 ### Tabs after the app is swiped away
@@ -179,11 +179,12 @@ Many phones end the whole app at once when it is swiped away from recent apps.
 Chrome reopens the tabs it had saved by then, which may miss the last few seconds
 of browsing.
 
-### Window caption on an external display
+### External display needs desktop mode
 
-Android's desktop mode draws a caption bar with window buttons across the top of
-the monitor. The app cannot hide it, so Chrome starts below it and the bar stays
-visible.
+In mirroring mode the phone's own HDMI mirroring owns the monitor and apps
+cannot draw on it, so Developer options' desktop mode is required. The mouse
+can only control Chrome on the monitor while ChromeDeck is in front on the
+phone.
 
 ### Audio
 
@@ -211,7 +212,7 @@ export ANDROID_SDK_ROOT="$ANDROID_HOME"
 
 Accept the SDK licenses and install the SDK and NDK components first. The build
 prepares the static PRoot runtime and keyboard data. Output:
-`lorie-app/build/outputs/apk/standalone/debug/desktop-chrome-debug.apk`.
+`lorie-app/build/outputs/apk/standalone/debug/chromedeck.apk`.
 
 ### Signing
 

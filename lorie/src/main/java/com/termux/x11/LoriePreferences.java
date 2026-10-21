@@ -392,7 +392,7 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             updateBrowserPreferences();
         }
 
-        // Desktop Chrome runtime options are opt-out marker files that the browser
+        // ChromeDeck runtime options are opt-out marker files that the browser
         // runtime reads; the automatic PRoot fallback writes the same marker.
         private static final String PROOT_OPT_OUT = "disable-proot-seccomp";
         private static final String CHROME_UPDATE_OPT_OUT = "disable-chrome-update";

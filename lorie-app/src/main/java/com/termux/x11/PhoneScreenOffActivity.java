@@ -38,7 +38,7 @@ public class PhoneScreenOffActivity extends Activity {
         super.onCreate(state);
         current = new WeakReference<>(this);
         TextView hint = new TextView(this);
-        hint.setText("Desktop Chrome is on the external display.\nTap to turn the phone screen on.");
+        hint.setText("ChromeDeck is on the external display.\nTap to turn the phone screen on.");
         hint.setTextColor(Color.rgb(40, 40, 40));
         hint.setBackgroundColor(Color.BLACK);
         hint.setGravity(Gravity.CENTER);

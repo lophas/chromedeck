@@ -1,6 +1,6 @@
 # Audio output
 
-Desktop Chrome plays audio through Android. No microphone permission is
+ChromeDeck plays audio through Android. No microphone permission is
 requested; microphone input and calls are not supported.
 
 ## Design

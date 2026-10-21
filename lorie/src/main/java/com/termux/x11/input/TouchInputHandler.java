@@ -434,10 +434,10 @@ public class TouchInputHandler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // On an external display the mouse pointer stays on the phone screen, so the
             // window always captures it there.
-            if ((mInjector.pointerCapture || mActivity.isOnExternalDisplay()) && enabled)
-                mActivity.getLorieView().requestPointerCapture();
+            if ((mInjector.pointerCapture || mActivity.isOutputOnExternalDisplay()) && enabled)
+                mActivity.getPointerCaptureView().requestPointerCapture();
             else
-                mActivity.getLorieView().releasePointerCapture();
+                mActivity.getPointerCaptureView().releasePointerCapture();
         }
 
         if (mInjector.pauseKeyInterceptingWithEsc) {
@@ -469,6 +469,8 @@ public class TouchInputHandler {
                 "1".equals(p.touchMode.get()) &&
                 !"native".equals(p.displayResolutionMode.get());
         mInjector.capturedPointerSpeedFactor = ((float) p.capturedPointerSpeedFactor.get())/100;
+        mInjector.wheelScrollFactor = ((float) p.mouseWheelScrollSpeed.get())/100;
+        mInjector.touchpadPinchZoom = p.touchpadPinchZoom.get();
         mInjector.dexMetaKeyCapture = p.dexMetaKeyCapture.get();
         mInjector.stylusIsMouse = p.stylusIsMouse.get();
         mInjector.stylusButtonContactModifierMode = p.stylusButtonContactModifierMode.get();
@@ -492,10 +494,11 @@ public class TouchInputHandler {
 
         mActivity.getRealMetrics(mMetrics);
 
-        if (!p.pointerCapture.get() && hasPointerCapture(mActivity.getLorieView()))
-            mActivity.getLorieView().releasePointerCapture();
+        if (!p.pointerCapture.get() && !mActivity.isOutputOnExternalDisplay()
+                && hasPointerCapture(mActivity.getPointerCaptureView()))
+            mActivity.getPointerCaptureView().releasePointerCapture();
 
-        keyIntercepting = !mInjector.pauseKeyInterceptingWithEsc || hasPointerCapture(mActivity.getLorieView());
+        keyIntercepting = !mInjector.pauseKeyInterceptingWithEsc || hasPointerCapture(mActivity.getPointerCaptureView());
         SamsungDexUtils.dexMetaKeyCapture(mActivity, mInjector.dexMetaKeyCapture && keyIntercepting);
 
         swipeUpAction = extractUserActionFromPreferences(p, "swipeUp");
@@ -585,9 +588,19 @@ public class TouchInputHandler {
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
             builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
 
-        // Desktop Chrome: while the browser is on a monitor, tapping the notification or
+        // ChromeDeck: while the browser is on a monitor, tapping the notification or
         // its button darkens the phone screen.
-        if (ctx instanceof MainActivity && ((MainActivity) ctx).isOnExternalDisplay()) {
+        if (ctx instanceof MainActivity && ((MainActivity) ctx).isPresenting()) {
+            MainActivity activity = (MainActivity) ctx;
+            builder.addAction(0, ctx.getString(activity.isPhoneScreenOff()
+                            ? com.termux.x11.R.string.lorie_notification_phone_screen_on
+                            : com.termux.x11.R.string.lorie_notification_phone_screen_off),
+                    PendingIntent.getBroadcast(ctx, 4, new Intent(MainActivity.ACTION_CUSTOM) {{
+                        putExtra("what", "togglePhoneScreenOff");
+                        putExtra(CmdEntryPoint.EXTRA_DOCUMENT_TAG, activity.getTag());
+                        setPackage(ctx.getPackageName());
+                    }}, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        } else if (ctx instanceof MainActivity && ((MainActivity) ctx).isOnExternalDisplay()) {
             PendingIntent screenOff = PendingIntent.getActivity(ctx, 3,
                     new Intent().setClassName(ctx, "com.termux.x11.PhoneScreenOffActivity")
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE);
@@ -1026,14 +1039,17 @@ public class TouchInputHandler {
         @SuppressLint("ClickableViewAccessibility")
         boolean onTouch(View v, MotionEvent e) {
             if (e.getAction() == MotionEvent.ACTION_SCROLL) {
-                float scrollY = -100 * e.getAxisValue(MotionEvent.AXIS_VSCROLL);
-                float scrollX = -100 * e.getAxisValue(MotionEvent.AXIS_HSCROLL);
+                if (mInjector.dropAsTouchpadPinch(e.getEventTime()))
+                    return true;
+                float scrollY = -100 * mInjector.wheelScrollFactor * e.getAxisValue(MotionEvent.AXIS_VSCROLL);
+                float scrollX = -100 * mInjector.wheelScrollFactor * e.getAxisValue(MotionEvent.AXIS_HSCROLL);
 
                 mInjector.sendMouseWheelEvent(scrollX, scrollY);
                 return true;
             }
 
-            if (!hasPointerCapture(v)) {
+            // While presenting, the phone window holds the capture for the display view.
+            if (!hasPointerCapture(mActivity.getPointerCaptureView())) {
                 mRenderData.mapScreenPoint(e.getX(), e.getY(), mappedPoint);
                 if (mRenderData.setCursorPosition(mappedPoint[0], mappedPoint[1]))
                     mInjector.sendCursorMove(mappedPoint[0], mappedPoint[1], false);
@@ -1130,7 +1146,7 @@ public class TouchInputHandler {
             boolean hasTilt = e.getDevice().getMotionRange(MotionEvent.AXIS_TILT) != null;
             boolean hasOrientation = e.getDevice().getMotionRange(MotionEvent.AXIS_ORIENTATION) != null;
 
-            if (hasPointerCapture(mActivity.getLorieView()) &&
+            if (hasPointerCapture(mActivity.getPointerCaptureView()) &&
                     isExternal(dev) && rangeX != null && rangeY != null) {
                 newX *= (float) mMetrics.widthPixels / rangeX.getMax();
                 newY *= (float) mMetrics.heightPixels / rangeY.getMax();

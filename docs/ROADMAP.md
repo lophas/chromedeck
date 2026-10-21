@@ -5,8 +5,8 @@ them. Estimates assume the existing build host and the Vivo X300 test phone.
 
 ## Phone touchpad while Chrome is on a monitor
 
-Turn **Phone screen off** into a DeX-style touchpad: the black phone screen
-controls the pointer on the external display.
+Done for the Presentation monitor mode: the dark phone screen works as a touchpad
+through Termux:X11's trackpad gestures. The notes below remain for reference.
 
 Already available: Termux:X11's trackpad gesture engine
 (`InputStrategyInterface.TrackpadInputStrategy`, used when the phone screen is
@@ -30,15 +30,12 @@ Work needed:
 Estimate: about half a day for 1–3 including monitor testing, about an hour more
 for 4.
 
-## Monitor mode without desktop mode (Presentation API)
+## Monitor without Developer options
 
-Draw the X screen on the external display through `android.app.Presentation`
-instead of Android's desktop windowing. Benefits: no window caption bar, the full
-1920×1080 for Chrome, no Developer options or restart, and the browser keeps
-running when the monitor disconnects. The phone could show the touchpad above.
-Cost: move Termux:X11's display view into a Presentation window and route
-keyboard and mouse input there; a few hours plus testing. How Vivo routes
-keyboard input to a Presentation window is unknown.
+ChromeDeck shows Chrome on a monitor through a Presentation window, but on the test
+phone this still needs Developer options' desktop mode: in mirroring mode the
+phone's own HDMI mirroring owns the display, which is disabled for apps. Other
+phones may expose the monitor as a presentation display without desktop mode.
 
 ## WebGL through SwiftShader
 

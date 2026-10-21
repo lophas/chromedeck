@@ -11,6 +11,7 @@ import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
 import android.app.AppOpsManager;
 import android.app.PictureInPictureParams;
+import android.app.Presentation;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -119,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
     LorieApp app;
 
     private boolean oldFullscreen = false, oldHideCutout = false;
+    private LorieView mLorieView;
+    private Presentation presentation;
     private OrientationEventListener orientationListener;
 
     ViewTreeObserver.OnPreDrawListener mOnPredrawListener = new ViewTreeObserver.OnPreDrawListener() {
@@ -325,6 +328,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.displays_button).setOnClickListener((l) -> showDisplaysDialog());
 
         LorieView lorieView = findViewById(R.id.lorieView);
+        mLorieView = lorieView;
         View lorieParent = (View) lorieView.getParent();
 
         mInputHandler = new TouchInputHandler(this, new InputEventSender(this, lorieView));
@@ -358,6 +362,8 @@ public class MainActivity extends AppCompatActivity {
                 mInputHandler.handleInputTransformChanged(screenWidth, screenHeight, inputTransform));
 
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
+        displayManager.registerDisplayListener(presentationDisplayListener, handler);
+        handler.post(this::updatePresentation);
         orientationListener = new OrientationEventListener(this) {
             @Override public void onOrientationChanged(int orientation) {
                 setTerminalToolbarViewLayout();
@@ -413,8 +419,18 @@ public class MainActivity extends AppCompatActivity {
         relaunchAsTaggedIfNeeded(intent, false);
     }
 
+    private final DisplayManager.DisplayListener presentationDisplayListener = new DisplayManager.DisplayListener() {
+        @Override public void onDisplayAdded(int displayId) { updatePresentation(); }
+        @Override public void onDisplayRemoved(int displayId) { updatePresentation(); }
+        @Override public void onDisplayChanged(int displayId) { updatePresentation(); }
+    };
+
     @Override
     protected void onDestroy() {
+        if (displayManager != null)
+            displayManager.unregisterDisplayListener(presentationDisplayListener);
+        if (presentation != null)
+            presentation.dismiss();
         handler.removeCallbacks(screenIdleTimeoutCheck);
         if (mInputHandler != null)
             mInputHandler.onDestroy();
@@ -812,6 +828,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
+        resumed = true;
         if (redirected)
             return;
 
@@ -834,11 +851,17 @@ public class MainActivity extends AppCompatActivity {
         orientationListener.disable();
         super.onPause();
 
-        app.onActivityPaused();
+        resumed = false;
+        // While Chrome is on a monitor the notification stays, to turn the phone screen back off.
+        if (presentation != null)
+            app.onActivityResumed(this);
+        else
+            app.onActivityPaused();
     }
 
     public LorieView getLorieView() {
-        return findViewById(R.id.lorieView);
+        // The view moves into a Presentation window while Chrome is shown on a monitor.
+        return mLorieView != null ? mLorieView : findViewById(R.id.lorieView);
     }
 
     public ViewPager getTerminalToolbarViewPager() {
@@ -954,11 +977,17 @@ public class MainActivity extends AppCompatActivity {
         boolean barReservesKeyboardSpace = pos == PAGER_POSITION_BOTTOM && ekbarContentInset > 0;
         int imeContentInset = barReservesKeyboardSpace ? bottomMargin : (prefs.Reseed.get() ? imeHeight : 0);
 
-        getLorieView().setContentInsets(pos == PAGER_POSITION_LEFT ? ekbarContentInset : 0,
-                pos == PAGER_POSITION_TOP ? ekbarContentInset : 0,
-                pos == PAGER_POSITION_RIGHT ? ekbarContentInset : 0,
-                imeContentInset + (pos == PAGER_POSITION_BOTTOM ? ekbarContentInset : 0));
-        getLorieView().setObscuredBottom(imeHeight - imeContentInset);
+        if (presentation != null) {
+            // The key bar and the keyboard stay on the phone; the monitor shows the whole screen.
+            getLorieView().setContentInsets(0, 0, 0, 0);
+            getLorieView().setObscuredBottom(0);
+        } else {
+            getLorieView().setContentInsets(pos == PAGER_POSITION_LEFT ? ekbarContentInset : 0,
+                    pos == PAGER_POSITION_TOP ? ekbarContentInset : 0,
+                    pos == PAGER_POSITION_RIGHT ? ekbarContentInset : 0,
+                    imeContentInset + (pos == PAGER_POSITION_BOTTOM ? ekbarContentInset : 0));
+            getLorieView().setObscuredBottom(imeHeight - imeContentInset);
+        }
 
         ViewPager pager = getTerminalToolbarViewPager();
         ViewGroup.MarginLayoutParams pagerParams = (ViewGroup.MarginLayoutParams) pager.getLayoutParams();
@@ -1026,11 +1055,11 @@ public class MainActivity extends AppCompatActivity {
         KeyInterceptor.recheck();
 
         // The system bars come back when the window loses focus.
-        if (hasFocus && !redirected && isOnExternalDisplay()) {
+        if (hasFocus && !redirected && isOutputOnExternalDisplay()) {
             // The X connection may still be starting; retry until the pointer is captured.
             for (long delay : new long[] { 0, 1000, 3000, 6000 })
                 handler.postDelayed(() -> {
-                    if (hasWindowFocus() && (SDK_INT < VERSION_CODES.O || !getLorieView().hasPointerCapture()))
+                    if (hasWindowFocus() && (SDK_INT < VERSION_CODES.O || !getPointerCaptureView().hasPointerCapture()))
                         setCapturingEnabled(true);
                 }, delay);
         }
@@ -1089,7 +1118,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** Keeps or drops the screen-on flag based on elapsed idle time, rescheduling itself for the remaining time. */
     private void checkScreenIdleTimeout() {
-        String mode = isOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
+        String mode = isOutputOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
         if (!getLorieView().connected() || "never".equals(mode) || "system".equals(mode)) {
             screenIdleTimeoutArmedMode = null;
             return;
@@ -1111,7 +1140,7 @@ public class MainActivity extends AppCompatActivity {
     /** Syncs screenIdleTimeout state/timer to the current preference without extending an already-scheduled check. */
     private void applyScreenIdleTimeout() {
         // An external display sleeps together with the phone, so keep it awake there.
-        String mode = isOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
+        String mode = isOutputOnExternalDisplay() ? "never" : prefs.screenIdleTimeout.get();
         boolean connected = getLorieView().connected();
         if (!connected || "never".equals(mode) || "system".equals(mode)) {
             handler.removeCallbacks(screenIdleTimeoutCheck);
@@ -1280,6 +1309,8 @@ public class MainActivity extends AppCompatActivity {
                 getLorieView().setPointerIcon(PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
 
             applyWindowSettings();
+            if (connected)
+                updatePresentation();
         });
     }
 
@@ -1319,8 +1350,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static native void nativeSetLaunchWindowingModeFreeform(Object activityOptions);
-    private static native void nativeSetLaunchWindowingMode(Object activityOptions, int windowingMode);
-    private static final int WINDOWING_MODE_FULLSCREEN = 1;
 
     /** The first external display that can show app windows, or Display.INVALID_DISPLAY. */
     public static int externalDisplayId(Context ctx) {
@@ -1339,26 +1368,118 @@ public class MainActivity extends AppCompatActivity {
         return prefs.fullscreen.get() && !isOnExternalDisplay();
     }
 
+    /** Chrome is shown on an external display, by this window or by its Presentation. */
+    public boolean isOutputOnExternalDisplay() {
+        return presentation != null || isOnExternalDisplay();
+    }
+
+    /** Whether the browser should be shown on an external display through a Presentation. */
+    public static boolean presentationWanted(Context ctx, Prefs prefs) {
+        return externalDisplayId(ctx) != Display.INVALID_DISPLAY && prefs.autoExternalDisplay.get();
+    }
+
+    /**
+     * Without desktop mode, an external display is shown through a Presentation: the
+     * X screen moves there without a window caption, while this window on the phone
+     * keeps input focus for the keyboard and the captured mouse.
+     */
+    void updatePresentation() {
+        boolean wanted = canPresent();
+        // Move the view only once the X connection is up; moving it earlier lost the connection.
+        if (wanted && presentation == null && getLorieView().connected()) {
+            Display display = displayManager.getDisplay(externalDisplayId(this));
+            if (display == null)
+                return;
+            LorieView view = getLorieView();
+            presentation = new Presentation(this, display) {
+                @Override public void dismiss() {
+                    // Take the view back before the window goes away, also when Android
+                    // dismisses the presentation because the display disconnected.
+                    restoreLorieView();
+                    super.dismiss();
+                }
+            };
+            FrameLayout container = new FrameLayout(presentation.getContext());
+            container.setBackgroundColor(android.graphics.Color.BLACK);
+            view.movingBetweenWindows = true;
+            ((ViewGroup) view.getParent()).removeView(view);
+            container.addView(view, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            view.movingBetweenWindows = false;
+            presentation.setContentView(container);
+            presentation.show();
+            applyContentInsets();
+            app.refreshNotificationIfShown();
+            // Keys and the captured mouse arrive through this window on the phone.
+            View frame = findViewById(R.id.frame);
+            frame.setFocusable(true);
+            frame.setFocusableInTouchMode(true);
+            frame.setOnKeyListener(mLorieKeyListener);
+            frame.requestFocus();
+            applyScreenIdleTimeout();
+            setCapturingEnabled(true);
+        } else if (!wanted && presentation != null) {
+            presentation.dismiss();
+        }
+    }
+
+    private void restoreLorieView() {
+        if (presentation == null)
+            return;
+        // Give the mouse back to Android on the phone screen.
+        if (SDK_INT >= VERSION_CODES.O)
+            findViewById(R.id.frame).releasePointerCapture();
+        presentation = null;
+        LorieView view = getLorieView();
+        view.movingBetweenWindows = true;
+        if (view.getParent() != null)
+            ((ViewGroup) view.getParent()).removeView(view);
+        ((FrameLayout) findViewById(R.id.frame)).addView(view, 0, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        view.movingBetweenWindows = false;
+        view.requestFocus();
+        applyContentInsets();
+        applyScreenIdleTimeout();
+        app.refreshNotificationIfShown();
+    }
+
+    public boolean isPresenting() {
+        return presentation != null;
+    }
+
+    /** A monitor is available for the Presentation. */
+    public boolean canPresent() {
+        return !isOnExternalDisplay() && presentationWanted(this, prefs);
+    }
+
+    private boolean resumed;
+
+    /** The phone shows this window: a dark screen that works as a touchpad for the monitor. */
+    public boolean isPhoneScreenOff() {
+        return presentation != null && resumed;
+    }
+
+    /**
+     * Phone screen off: brings this window to the front of the phone, where it is dark and
+     * works as a touchpad, with the keyboard and mouse going to the monitor. Turning it off
+     * moves it back so that other apps can be used; Chrome stays on the monitor.
+     */
+    public void togglePhoneScreenOff() {
+        if (resumed)
+            moveTaskToBack(true);
+        else
+            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    /** The view that holds pointer capture: the display view, or this window's frame while presenting. */
+    public View getPointerCaptureView() {
+        return presentation != null ? findViewById(R.id.frame) : getLorieView();
+    }
+
     public boolean isOnExternalDisplay() {
         return getWindowManager().getDefaultDisplay().getDisplayId() != Display.DEFAULT_DISPLAY;
     }
 
-    /** Options that open the single-instance window maximized on the given display. */
-    public static Bundle launchOptions(int displayId) {
-        ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId);
-        nativeSetLaunchWindowingMode(opts, WINDOWING_MODE_FULLSCREEN);
-        return opts.toBundle();
-    }
-
-    /**
-     * Moves this window to an external display. Android recreates it there and the
-     * browser session restarts with that display's settings.
-     */
-    public void moveToExternalDisplay() {
-        int target = externalDisplayId(this);
-        if (target != Display.INVALID_DISPLAY && !isOnExternalDisplay())
-            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), launchOptions(target));
-    }
 
     static {
         System.loadLibrary("Xlorie");

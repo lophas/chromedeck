@@ -565,10 +565,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, __unused void *reserved) {
                 if (ActivityOptions.setLaunchWindowingMode)
                     env->CallVoidMethod(options, ActivityOptions.setLaunchWindowingMode, 5); // WINDOWING_MODE_FREEFORM
             }},
-            {"nativeSetLaunchWindowingMode", "(Ljava/lang/Object;I)V", (void *) +[](JNIEnv *env, __unused jclass clazz, jobject options, jint mode) {
-                if (ActivityOptions.setLaunchWindowingMode)
-                    env->CallVoidMethod(options, ActivityOptions.setLaunchWindowingMode, mode);
-            }},
     };
     env->RegisterNatives(env->FindClass("com/termux/x11/MainActivity"), mainActivityMethods, sizeof(mainActivityMethods)/sizeof(mainActivityMethods[0]));
 

@@ -45,6 +45,28 @@ public final class InputEventSender {
     public boolean pointerCapture = false;
     public boolean scaleTouchpad = false;
     public float capturedPointerSpeedFactor = 100;
+    public float wheelScrollFactor = 0.5f;
+    public boolean touchpadPinchZoom = false;
+
+    /**
+     * Some USB touchpads report a pinch as a Left Ctrl press followed within a millisecond
+     * by wheel events. A person pressing Ctrl and turning a wheel takes far longer, so
+     * wheel events that start that soon after Ctrl belong to a touchpad pinch.
+     */
+    private static final long PINCH_CTRL_TO_WHEEL_MS = 50;
+    private long ctrlDownTime = -1;
+    private boolean ctrlWheelSeen, touchpadPinch;
+
+    /** Whether to drop this wheel event as part of a touchpad pinch. */
+    public boolean dropAsTouchpadPinch(long eventTime) {
+        if (touchpadPinchZoom || ctrlDownTime < 0)
+            return false;
+        if (!ctrlWheelSeen) {
+            ctrlWheelSeen = true;
+            touchpadPinch = eventTime - ctrlDownTime < PINCH_CTRL_TO_WHEEL_MS;
+        }
+        return touchpadPinch;
+    }
     public boolean dexMetaKeyCapture = false;
     public boolean pauseKeyInterceptingWithEsc = false;
     public boolean stylusIsMouse = false;
@@ -212,6 +234,10 @@ public final class InputEventSender {
      * avoids sending a key-up event for a key that was previously injected as a text-event.
      */
     public boolean sendKeyEvent(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.KEYCODE_CTRL_LEFT && e.getRepeatCount() == 0) {
+            ctrlDownTime = e.getAction() == KeyEvent.ACTION_DOWN ? e.getEventTime() : -1;
+            ctrlWheelSeen = touchpadPinch = false;
+        }
         int keyCode = e.getKeyCode();
         boolean pressed = e.getAction() == KeyEvent.ACTION_DOWN;
 
@@ -301,7 +327,7 @@ public final class InputEventSender {
         else
             mPressedKeys.remove(keyCode);
 
-        if (keyCode == KEYCODE_ESCAPE && !pressed && e.hasNoModifiers() && !mActivity.isOnExternalDisplay())
+        if (keyCode == KEYCODE_ESCAPE && !pressed && e.hasNoModifiers() && !mActivity.isOutputOnExternalDisplay())
             mActivity.setCapturingEnabled(false);
 
         // We try to send all other key codes to the host directly.

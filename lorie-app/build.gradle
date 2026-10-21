@@ -35,7 +35,7 @@ android {
         applicationId "hu.lophas.desktopchromeandroid"
         minSdkVersion 26
         targetSdkVersion 28
-        versionCode 50
+        versionCode 58
         versionName termuxX11VersionName
     }
 
@@ -88,7 +88,7 @@ androidComponents {
     onVariants(selector().all()) { variant ->
         def name = variant.flavorName == 'standalone' ? variant.buildType : "${variant.flavorName}-${variant.buildType}"
         variant.outputs.each { output ->
-            output.outputFileName.set("desktop-chrome-${name}.apk")
+            output.outputFileName.set(name == 'debug' ? "chromedeck.apk" : "chromedeck-${name}.apk")
         }
         if (variant.flavorName == 'sharedUid') {
             def verify = tasks.register("verify${variant.name.capitalize()}Process", VerifySharedUidProcess) {

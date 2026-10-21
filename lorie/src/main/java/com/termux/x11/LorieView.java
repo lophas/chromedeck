@@ -321,9 +321,15 @@ public class LorieView extends SurfaceView implements InputStub {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        // Moving between the phone window and a Presentation keeps the X connection.
+        if (movingBetweenWindows)
+            return;
         nativeDestroy(mNativeContext);
         mNativeContext = 0;
     }
+
+    /** Set while the view moves to another window, so that its native state survives. */
+    boolean movingBetweenWindows;
 
     public void setCallback(Callback callback) {
         mCallback = callback;

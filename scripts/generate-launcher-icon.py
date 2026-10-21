@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-# Generates the Desktop Chrome Android launcher icon (108x108 adaptive canvas):
+# Generates the ChromeDeck launcher icon (108x108 adaptive canvas):
 # an original emblem of a blue core inside three separate coloured arcs.
 # Writes dc_ic_launcher_*.xml and preview.html to the current directory; copy the
 # XML files to lorie-app/src/main/res/drawable.
@@ -86,7 +86,7 @@ for label, mask in (("Kör", "circle"), ("Squircle", "squircle"), ("Lekerekítet
     cells.append(f'<figure>{svg(mask, 144)}<figcaption>{label}</figcaption></figure>')
 cells.append(f'<figure>{svg("circle", 144, True)}<figcaption>Themed (egyszínű)</figcaption></figure>')
 small = "".join(svg("circle", s) for s in (96, 64, 48, 32))
-html = f"""<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>Desktop Chrome ikon</title>
+html = f"""<!doctype html><html lang="hu"><head><meta charset="utf-8"><title>ChromeDeck ikon</title>
 <style>body{{font:15px system-ui;margin:24px;background:#f4f6fa;color:#1d2433}}
 .row{{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;padding:20px;border-radius:16px;margin-bottom:18px}}
 .light{{background:#fff}} .dark{{background:#1b1d22;color:#e8eaf0}} figure{{margin:0;text-align:center}}
