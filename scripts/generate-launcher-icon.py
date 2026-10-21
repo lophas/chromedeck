@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
+# Generates the Desktop Chrome Android launcher icon (108x108 adaptive canvas):
+# an original emblem of a blue core inside three separate coloured arcs.
 # Writes dc_ic_launcher_*.xml and preview.html to the current directory; copy the
-# XML files to lorie-app/src/main/res/drawable. The icon is an original design.
-# Generates the Desktop Chrome Android launcher icon (108x108 adaptive canvas)
-# as Android vector drawables and an SVG/HTML preview.
+# XML files to lorie-app/src/main/res/drawable.
 def rr(x, y, w, h, r):
     return (f"M{x+r},{y} H{x+w-r} A{r},{r} 0 0 1 {x+w},{y+r} V{y+h-r} A{r},{r} 0 0 1 {x+w-r},{y+h} "
             f"H{x+r} A{r},{r} 0 0 1 {x},{y+h-r} V{y+r} A{r},{r} 0 0 1 {x+r},{y} Z")
@@ -16,22 +16,16 @@ def arc(cx, cy, r, a0, a1):
     (x0, y0), (x1, y1) = p(a0), p(a1)
     return f"M{x0:.2f},{y0:.2f} A{r},{r} 0 0 1 {x1:.2f},{y1:.2f}"
 
-FRAME, SCREEN = "#3C4350", "#FFFFFF"
 RED, YELLOW, GREEN, BLUE = "#E8473B", "#F5B90A", "#2FA65A", "#3F7FEE"
-CX, CY, R = 54, 49.5, 11.4
-# Three separate tri-colour arcs with gaps (strokes) around a blue core.
-ARCS = [(RED, -145, -85), (GREEN, -25, 35), (YELLOW, 95, 155)]
-fg = [
-    (FRAME, rr(25, 29, 58, 40, 5.5)),
-    (SCREEN, rr(28.5, 32.5, 51, 33, 2.5)),
-    (FRAME, rr(49.5, 69, 9, 4.5, 0.5)),
-    (FRAME, rr(39, 73, 30, 4.5, 2.25)),
-    (BLUE, circ(CX, CY, 5.2)),
-]
+# A blue core inside three separate red, green and yellow arcs with clear gaps.
+# Launchers keep the central 66dp circle; the emblem stays inside it.
+CX, CY, R = 54, 54, 19
+STROKE_W = 7.5
+ARCS = [(RED, -150, -90), (GREEN, -30, 30), (YELLOW, 90, 150)]
+CORE = circ(CX, CY, 8.5)
+fg = [(BLUE, CORE)]
 strokes = [(c, arc(CX, CY, R, a0, a1)) for c, a0, a1 in ARCS]
-STROKE_W = 3.6
-mono = [rr(25, 29, 58, 40, 5.5) + " " + rr(28.5, 32.5, 51, 33, 2.5),
-        rr(49.5, 69, 9, 4.5, 0.5), rr(39, 73, 30, 4.5, 2.25), circ(CX, CY, 5.2)]
+mono = [CORE]
 
 def vector(paths, even_odd=False, stroke_paths=None):
     out = ['<?xml version="1.0" encoding="utf-8"?>',
