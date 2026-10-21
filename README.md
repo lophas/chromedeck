@@ -123,6 +123,17 @@ tabs. It can reduce resource usage but is not a hard process cap.
   installed version is shown below the switch. A Chrome version pinned by a
   later APK is treated as a minimum and never downgrades a newer installation.
 
+## Reopening tabs after a restart
+
+Desktop Chrome reopens the tabs of the last session when the app starts again,
+without a "Chrome didn't shut down correctly" prompt. When Android stops the
+app through its normal lifecycle, the app asks Chrome to quit cleanly first.
+Many phones end the whole app at once, for example when it is swiped away
+from recent apps; Chrome cannot save anything at that moment, so the tabs it
+had already saved are reopened. Each profile is set once to Chrome's
+**On startup → Continue where you left off**; you can change that in Chrome's
+settings.
+
 ## Keyboard toolbar
 
 The **extra key bar** is the toolbar containing Escape, Ctrl, Alt and navigation
