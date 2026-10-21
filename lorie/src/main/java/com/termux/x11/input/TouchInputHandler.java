@@ -432,7 +432,9 @@ public class TouchInputHandler {
     public void setCapturingEnabled(boolean enabled) {
         enabled &= mActivity.getLorieView().connected();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (mInjector.pointerCapture && enabled)
+            // On an external display the mouse pointer stays on the phone screen, so the
+            // window always captures it there.
+            if ((mInjector.pointerCapture || mActivity.isOnExternalDisplay()) && enabled)
                 mActivity.getLorieView().requestPointerCapture();
             else
                 mActivity.getLorieView().releasePointerCapture();

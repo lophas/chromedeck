@@ -1026,6 +1026,14 @@ public class MainActivity extends AppCompatActivity {
         KeyInterceptor.recheck();
 
         // The system bars come back when the window loses focus.
+        if (hasFocus && !redirected && isOnExternalDisplay()) {
+            // The X connection may still be starting; retry until the pointer is captured.
+            for (long delay : new long[] { 0, 1000, 3000, 6000 })
+                handler.postDelayed(() -> {
+                    if (hasWindowFocus() && (SDK_INT < VERSION_CODES.O || !getLorieView().hasPointerCapture()))
+                        setCapturingEnabled(true);
+                }, delay);
+        }
         if (hasFocus && !redirected) {
             applyImmersiveMode();
             LorieView.markUserActivity();

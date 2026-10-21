@@ -301,7 +301,7 @@ public final class InputEventSender {
         else
             mPressedKeys.remove(keyCode);
 
-        if (keyCode == KEYCODE_ESCAPE && !pressed && e.hasNoModifiers())
+        if (keyCode == KEYCODE_ESCAPE && !pressed && e.hasNoModifiers() && !mActivity.isOnExternalDisplay())
             mActivity.setCapturingEnabled(false);
 
         // We try to send all other key codes to the host directly.

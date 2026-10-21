@@ -39,6 +39,8 @@ public class PhoneScreenOffActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         current = new WeakReference<>(this);
+        // Keep keyboard focus on the browser window on the external display.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         WindowManager.LayoutParams attributes = getWindow().getAttributes();
         attributes.screenBrightness = 0.0f;
         getWindow().setAttributes(attributes);
@@ -57,6 +59,15 @@ public class PhoneScreenOffActivity extends Activity {
                 controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
         }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        // Starting this cover moves input focus to the phone screen; give it back.
+        int external = MainActivity.externalDisplayId(this);
+        if (external != Display.INVALID_DISPLAY)
+            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    ActivityOptions.makeBasic().setLaunchDisplayId(external).toBundle());
     }
 
     @Override protected void onDestroy() {
