@@ -891,6 +891,7 @@ public class MainActivity extends AppCompatActivity {
         getTerminalToolbarViewPager().setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
 
         applyMonitorStatusBar();
+        updateToolbar();
         lorieView.requestLayout();
         lorieView.invalidate();
 
@@ -1125,6 +1126,10 @@ public class MainActivity extends AppCompatActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         KeyInterceptor.recheck();
+        if (hasFocus && keyboardRequested) {
+            keyboardRequested = false;
+            showKeyboard();
+        }
 
         // The system bars come back when the window loses focus.
         if (hasFocus && !redirected && isOutputOnExternalDisplay()) {
@@ -1332,6 +1337,7 @@ public class MainActivity extends AppCompatActivity {
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, @NonNull Configuration newConfig) {
         this.isInPictureInPictureMode = isInPictureInPictureMode;
         getLorieView().onPictureInPictureModeChanged(isInPictureInPictureMode);
+        updateToolbar();
         final ViewPager pager = getTerminalToolbarViewPager();
         pager.setAlpha(isInPictureInPictureMode ? 0.f : extraKeysReserveSpace() ? 1.f : ((float) prefs.opacityEKBar.get())/100);
         findViewById(R.id.mouse_buttons).setAlpha(isInPictureInPictureMode ? 0.f : 0.7f);
@@ -1576,13 +1582,13 @@ public class MainActivity extends AppCompatActivity {
                 imeProxy.setOnCapturedPointerListener((v, e) -> mInputHandler.handleTouchEvent(view, view, e));
             ((FrameLayout) findViewById(R.id.frame)).addView(imeProxy, new FrameLayout.LayoutParams(1, 1));
             imeProxy.requestFocus();
-            addTouchpadToolbar();
             applyScreenIdleTimeout();
             setCapturingEnabled(true);
             updateBrowserVisibility();
         } else if (!wanted && presentation != null) {
             presentation.dismiss();
         }
+        updateToolbar();
     }
 
     private void restoreLorieView() {
@@ -1595,10 +1601,6 @@ public class MainActivity extends AppCompatActivity {
             ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(imeProxy.getWindowToken(), 0);
             ((ViewGroup) imeProxy.getParent()).removeView(imeProxy);
             imeProxy = null;
-        }
-        if (touchpadToolbar != null) {
-            ((ViewGroup) touchpadToolbar.getParent()).removeView(touchpadToolbar);
-            touchpadToolbar = null;
         }
         presentation = null;
         monitorStatusBar = null;
@@ -1615,33 +1617,71 @@ public class MainActivity extends AppCompatActivity {
         applyScreenIdleTimeout();
         app.refreshNotificationIfShown();
         updateBrowserVisibility();
+        updateToolbar();
     }
 
-    private LinearLayout touchpadToolbar;
+    private FloatingToolbar toolbar;
+    private boolean keyboardRequested;
 
     /**
-     * A row of faint buttons at the top of the dark phone screen while Chrome is on the
-     * monitor: settings, on-screen keyboard, using the phone for other apps, and exit.
-     * Touches on it do not reach the touchpad.
+     * ChromeDeck's toolbar: over Chrome on the phone, or on the dark touchpad while Chrome
+     * is on a monitor, with the buttons that fit the situation. The app's notification
+     * offers the same actions.
      */
-    private void addTouchpadToolbar() {
-        float dp = getResources().getDisplayMetrics().density;
-        touchpadToolbar = new LinearLayout(this);
-        touchpadToolbar.setOrientation(LinearLayout.HORIZONTAL);
-        addTouchpadButton(R.drawable.ic_extra_key_settings, R.string.lorie_touchpad_settings,
-                () -> startActivity(new Intent(this, LoriePreferences.class).setAction(Intent.ACTION_MAIN)));
-        addTouchpadButton(R.drawable.ic_extra_key_keyboard, R.string.lorie_touchpad_keyboard, this::showKeyboardFromTouchpad);
-        addTouchpadButton(R.drawable.lorie_ic_phone, R.string.lorie_touchpad_phone, this::togglePhoneScreenOff);
-        // Exit asks first: the button is easy to touch while using the touchpad.
-        addTouchpadButton(R.drawable.lorie_ic_exit, R.string.lorie_touchpad_exit, () -> new AlertDialog.Builder(this)
-                .setMessage(R.string.lorie_touchpad_exit_question)
-                .setPositiveButton(R.string.lorie_touchpad_exit, (d, w) -> finish())
+    void updateToolbar() {
+        if (redirected)
+            return;
+        if (toolbar == null) {
+            toolbar = new FloatingToolbar(this, getSharedPreferences("chromedeck-toolbar", MODE_PRIVATE));
+            ((FrameLayout) findViewById(R.id.frame)).addView(toolbar, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START));
+        }
+        boolean shown = prefs.showToolbar.get() && !isInPictureInPictureMode && !isOnExternalDisplay()
+                && (presentation != null || getLorieView().connected());
+        toolbar.setVisibility(shown ? View.VISIBLE : View.GONE);
+        if (!shown)
+            return;
+        FloatingToolbar.Item settings = new FloatingToolbar.Item(R.drawable.ic_extra_key_settings, R.string.lorie_toolbar_settings, this::openSettings);
+        FloatingToolbar.Item keyboard = new FloatingToolbar.Item(R.drawable.ic_extra_key_keyboard, R.string.lorie_toolbar_keyboard, this::showKeyboard);
+        FloatingToolbar.Item exit = new FloatingToolbar.Item(R.drawable.lorie_ic_exit, R.string.lorie_toolbar_exit, this::confirmExit);
+        if (presentation != null)
+            toolbar.show("touchpad", settings, keyboard,
+                    new FloatingToolbar.Item(R.drawable.lorie_ic_mirroring, R.string.lorie_toolbar_mirroring, () -> setPresentationChoice(false)),
+                    new FloatingToolbar.Item(R.drawable.lorie_ic_phone, R.string.lorie_toolbar_phone, this::togglePhoneScreenOff),
+                    exit);
+        else if (isMonitorAvailable())
+            toolbar.show("phone", settings, keyboard,
+                    new FloatingToolbar.Item(R.drawable.lorie_ic_monitor, R.string.lorie_toolbar_monitor, () -> setPresentationChoice(true)),
+                    exit);
+        else
+            toolbar.show("phone", settings, keyboard, exit);
+        toolbar.bringToFront();
+    }
+
+    /** A monitor is connected while Chrome is on the phone, mirrored there. */
+    public boolean isMonitorAvailable() {
+        return presentation == null && !isOnExternalDisplay() && externalDisplayId(this) != Display.INVALID_DISPLAY;
+    }
+
+    public void openSettings() {
+        startActivity(new Intent(this, LoriePreferences.class).setAction(Intent.ACTION_MAIN));
+    }
+
+    /** Exit asks first: the toolbar is easy to touch by accident. */
+    private void confirmExit() {
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.lorie_toolbar_exit_question)
+                .setPositiveButton(R.string.lorie_toolbar_exit, (d, w) -> finish())
                 .setNegativeButton(android.R.string.cancel, null)
-                .show());
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        lp.topMargin = (int) (16 * dp);
-        ((FrameLayout) findViewById(R.id.frame)).addView(touchpadToolbar, lp);
+                .show();
+    }
+
+    /** From the notification: the keyboard opens once the notification shade has closed. */
+    public void requestKeyboard() {
+        if (hasWindowFocus())
+            showKeyboard();
+        else
+            keyboardRequested = true;
     }
 
     /**
@@ -1649,7 +1689,7 @@ public class MainActivity extends AppCompatActivity {
      * connected, unless its physical keyboard setting allows the full keyboard; the app
      * cannot change that setting, so it offers to open it.
      */
-    private void showKeyboardFromTouchpad() {
+    public void showKeyboard() {
         Configuration config = getResources().getConfiguration();
         boolean hardwareKeyboard = config.keyboard != Configuration.KEYBOARD_NOKEYS
                 && config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
@@ -1658,31 +1698,16 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         new AlertDialog.Builder(this)
-                .setMessage(R.string.lorie_touchpad_keyboard_setting)
-                .setPositiveButton(R.string.lorie_touchpad_keyboard_open_setting, (d, w) -> {
+                .setMessage(R.string.lorie_toolbar_keyboard_setting)
+                .setPositiveButton(R.string.lorie_toolbar_keyboard_open_setting, (d, w) -> {
                     try {
                         startActivity(new Intent("android.settings.HARD_KEYBOARD_SETTINGS"));
                     } catch (Exception e) {
                         startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
                     }
                 })
-                .setNegativeButton(R.string.lorie_touchpad_keyboard_small, (d, w) -> toggleKeyboardVisibility())
+                .setNegativeButton(R.string.lorie_toolbar_keyboard_small, (d, w) -> toggleKeyboardVisibility())
                 .show();
-    }
-
-    private void addTouchpadButton(int icon, int description, Runnable action) {
-        float dp = getResources().getDisplayMetrics().density;
-        ImageButton button = new ImageButton(this);
-        button.setImageResource(icon);
-        button.setColorFilter(android.graphics.Color.WHITE);
-        button.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        button.setAlpha(0.35f);
-        button.setContentDescription(getString(description));
-        button.setFocusable(false);
-        int pad = (int) (14 * dp);
-        button.setPadding(pad, pad, pad, pad);
-        button.setOnClickListener(v -> action.run());
-        touchpadToolbar.addView(button);
     }
 
     /** Shows or hides the battery and clock box on the monitor. */

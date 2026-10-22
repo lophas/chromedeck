@@ -594,18 +594,22 @@ public class TouchInputHandler {
         if ((i = extractIntentFromPreferences(ctx, prefs, "notificationTap", 0)) != null)
             builder.setContentIntent(i);
 
-        // ChromeDeck: no Settings button; settings open from the touchpad toolbar on the
-        // phone while Chrome is on a monitor, or from the app icon's shortcut.
-        boolean monitorAvailable = ctx instanceof MainActivity && !((MainActivity) ctx).isPresenting()
-                && !((MainActivity) ctx).isOnExternalDisplay()
-                && MainActivity.externalDisplayId(ctx) != android.view.Display.INVALID_DISPLAY;
-        if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
-            builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
+        if (!(ctx instanceof MainActivity)) {
+            if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton0", 1)) != null)
+                builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton0"), i);
+            if ((i = extractIntentFromPreferences(ctx, prefs, "notificationButton1", 2)) != null)
+                builder.addAction(0, extractTitleFromPreferences(ctx, prefs, "notificationButton1"), i);
+            return builder;
+        }
 
-        // ChromeDeck: with a monitor connected, a button moves Chrome between the monitor
-        // desktop and the phone; the notification text explains it, as buttons have little room.
-        if (ctx instanceof MainActivity && ((MainActivity) ctx).isPresenting()) {
-            MainActivity activity = (MainActivity) ctx;
+        // ChromeDeck: the toolbar's actions, as many as fit (three buttons). While Chrome is
+        // on a monitor the toolbar on the touchpad has Keyboard and Exit; Chrome's own close
+        // button exits on the phone. The text explains the buttons, which have little room.
+        MainActivity activity = (MainActivity) ctx;
+        builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_settings),
+                PendingIntent.getActivity(ctx, 7, new Intent(ctx, LoriePreferences.class)
+                        .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE));
+        if (activity.isPresenting()) {
             setText(builder, ctx.getString(com.termux.x11.R.string.lorie_notification_text_on_monitor));
             builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_show_on_phone),
                     customAction(ctx, 5, "showOnPhone", activity));
@@ -613,19 +617,26 @@ public class TouchInputHandler {
                             ? com.termux.x11.R.string.lorie_notification_use_phone
                             : com.termux.x11.R.string.lorie_notification_use_touchpad),
                     customAction(ctx, 4, "togglePhoneScreenOff", activity));
-        } else if (monitorAvailable) {
-            MainActivity activity = (MainActivity) ctx;
-            setText(builder, ctx.getString(com.termux.x11.R.string.lorie_notification_text_monitor_available));
-            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_show_on_monitor),
-                    customAction(ctx, 6, "showOnMonitor", activity));
-        } else if (ctx instanceof MainActivity && ((MainActivity) ctx).isOnExternalDisplay()) {
+            return builder;
+        }
+        if (activity.isOnExternalDisplay()) {
+            // Desktop mode: a window on the monitor, and a dark cover for the phone.
             PendingIntent screenOff = PendingIntent.getActivity(ctx, 3,
                     new Intent().setClassName(ctx, "com.termux.x11.PhoneScreenOffActivity")
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE);
-            builder.setContentIntent(screenOff);
             builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_phone_screen_off), screenOff);
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_exit), customAction(ctx, 8, "exit", activity));
+            return builder;
         }
-
+        builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_keyboard),
+                customAction(ctx, 9, "showKeyboard", activity));
+        if (activity.isMonitorAvailable()) {
+            setText(builder, ctx.getString(com.termux.x11.R.string.lorie_notification_text_monitor_available));
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_show_on_monitor),
+                    customAction(ctx, 6, "showOnMonitor", activity));
+        } else {
+            builder.addAction(0, ctx.getString(com.termux.x11.R.string.lorie_notification_exit), customAction(ctx, 8, "exit", activity));
+        }
         return builder;
     }
 

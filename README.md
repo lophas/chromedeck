@@ -80,11 +80,20 @@ adb install -r chromedeck.apk
 
 ## Getting started
 
-- **Preferences** open from the app icon's **Preferences** shortcut (touch and
-  hold the icon), or from the gear on the touchpad toolbar while Chrome is on a
-  monitor.
-- **On-screen keyboard:** the back gesture opens and closes it; on the monitor
-  touchpad, the keyboard button on the toolbar.
+- **Toolbar:** a small toolbar on the phone screen offers **Settings**,
+  **Keyboard** (Android's on-screen keyboard), **Monitor** or **Mirroring** when a
+  monitor is connected, the phone button while Chrome is on the monitor, and
+  **Exit** (after a confirmation). Drag it by its handle, by touch or with a mouse
+  that Chrome has not captured; tap the handle to fold it down to the handle.
+  Its place is kept separately for the phone and for the monitor touchpad.
+  **Preferences → Browser → Toolbar** hides it.
+- **Notification:** the app's notification offers the same actions, as many as
+  fit: **Settings**, **Keyboard** and **Exit**, or **Monitor** instead of Exit
+  while a monitor mirrors the phone; **Settings**, **Mirroring** and **Use phone**
+  / **Use touchpad** while Chrome is on the monitor.
+- **Preferences** also open from the app icon's **Preferences** shortcut (touch
+  and hold the icon). The back gesture also opens and closes the on-screen
+  keyboard.
 - **Fullscreen:** **Preferences → Output → Fullscreen** hides Android's status and
   navigation bars; swipe from the screen edge to show them briefly.
   **Hide cutout** also uses the area beside the camera cutout.
@@ -122,18 +131,17 @@ adb install -r chromedeck.apk
   this works in normal mirroring mode; Developer options' desktop mode is not
   needed. If a monitor that was connected while the phone started is not offered,
   reconnect it. Meanwhile the phone screen is dark and works as a touchpad, and
-  the keyboard and mouse control Chrome on the monitor. A row of faint buttons at
-  the top of the touchpad opens Settings, the on-screen keyboard, the phone for
-  other apps, and Exit (after a confirmation). The phone button, **Use phone** in
-  the notification, or the **Phone screen off** Quick Settings tile lets you use
-  other apps on the phone while Chrome stays on the monitor; the mouse then
-  belongs to the phone until you switch back. The phone stays awake while Chrome
-  is on the monitor, because the monitor sleeps together with the phone screen;
-  the power button still puts both to sleep. The top right corner of the monitor
-  shows the phone's battery level and the time over Chrome's window buttons;
-  **Preferences → Browser → Battery and clock on external display** turns it off,
-  and **Battery and clock height** matches it to Chrome's tab strip at another
-  display scale.
+  the keyboard and mouse control Chrome on the monitor. The toolbar moves onto the
+  touchpad, with **Mirroring** and the phone button. The phone button, **Use
+  phone** in the notification, or the **Phone screen off** Quick Settings tile
+  lets you use other apps on the phone while Chrome stays on the monitor; the
+  mouse then belongs to the phone until you switch back. The phone stays awake
+  while Chrome is on the monitor, because the monitor sleeps together with the
+  phone screen; the power button still puts both to sleep. The top right corner of
+  the monitor shows the phone's battery level and the time over Chrome's window
+  buttons; **Preferences → Browser → Battery and clock on external display** turns
+  it off, and **Battery and clock height** matches it to Chrome's tab strip at
+  another display scale.
 - **Display scale:** **Preferences → Browser → Display scale — phone** and
   **— monitor** make Chrome's interface and pages larger at full sharpness, like a
   HiDPI display, from 100% to 400%. **Automatic** (the default) follows Android's

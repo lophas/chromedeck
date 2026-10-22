@@ -192,6 +192,10 @@ public class LorieApp extends Application {
                     activity.setPresentationChoice(true);
                 else if (activity != null && "showOnPhone".equals(intent.getStringExtra("what")))
                     activity.setPresentationChoice(false);
+                else if (activity != null && "showKeyboard".equals(intent.getStringExtra("what")))
+                    activity.requestKeyboard();
+                else if (activity != null && "exit".equals(intent.getStringExtra("what")))
+                    activity.finish();
                 else if (activity != null)
                     activity.mInputHandler.extractUserActionFromPreferences(activity.prefs, intent.getStringExtra("what")).accept(0, true);
                 break;

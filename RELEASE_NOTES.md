@@ -9,6 +9,14 @@
   settings show the scale that Automatic picks.
 - With a monitor connected, Chrome starts after the monitor question, so it uses
   the scale of the display you choose.
+- **Toolbar on the phone too:** the touchpad's toolbar is now also on the phone
+  screen over Chrome: **Settings**, **Keyboard**, **Monitor** when a monitor is
+  connected, and **Exit**. Drag it by its handle (touch, or a mouse that Chrome has
+  not captured) and tap the handle to fold it; its place is kept per mode.
+  **Preferences → Browser → Toolbar** hides it.
+- **Notification** buttons match the toolbar: **Settings**, **Keyboard**, **Exit**
+  or **Monitor** on the phone; **Settings**, **Mirroring**, **Use phone** /
+  **Use touchpad** while Chrome is on the monitor.
 - The interface calls the external display **Monitor**: **Switch to monitor** /
   **Keep mirroring** in the question, **Monitor** / **Mirroring** in the
   notification.
