@@ -50,6 +50,20 @@ for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
     profile = prefs.setdefault("profile", {})
     profile["exit_type"] = "Normal"
     profile["exited_cleanly"] = True
+    # ChromeDeck's own keyboard extension is installed from outside the Chrome Web Store;
+    # mark it kept, as "Keep this extension" would, so that Chrome's extension Safety
+    # Check does not recommend removing it.
+    # Turning Show keyboard for text fields back on in the app asks to reinstall the
+    # extension even if it was removed in Chrome, which Chrome would otherwise keep.
+    if os.path.exists("/tmp/desktop-chrome-keyboard-reinstall"):
+        removed = prefs.get("extensions", {}).get("external_uninstalls")
+        if isinstance(removed, list) and "mlfpakdjihkojooofakdipafhmmnndeh" in removed:
+            removed.remove("mlfpakdjihkojooofakdipafhmmnndeh")
+    keyboard = prefs.get("extensions", {}).get("settings", {}).get("mlfpakdjihkojooofakdipafhmmnndeh")
+    if isinstance(keyboard, dict):
+        keyboard["ack_external"] = True
+        if "ack_safety_check_warning_reason" not in keyboard:
+            keyboard["ack_safety_check_warning"] = True
     marker = os.path.join(root, name, ".desktop-chrome-restore-default")
     if not os.path.exists(marker):
         prefs.setdefault("session", {}).setdefault("restore_on_startup", 1)
@@ -58,6 +72,8 @@ for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(prefs, f, separators=(",", ":"))
     os.replace(tmp, path)
+if os.path.exists("/tmp/desktop-chrome-keyboard-reinstall"):
+    os.remove("/tmp/desktop-chrome-keyboard-reinstall")
 PY
 # Skip the official wrapper's two persistent cat processes.
 # Keep the launch options from the last successful device baseline.

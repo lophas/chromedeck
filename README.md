@@ -101,13 +101,22 @@ adb install -r chromedeck.apk
 - **Preferences** also open from the app icon's **Preferences** shortcut (touch
   and hold the icon). The back gesture also opens and closes the on-screen
   keyboard.
+- **Keyboard for text fields:** tapping a text field on a web page opens Android's
+  on-screen keyboard, and leaving it closes the keyboard, unless a hardware keyboard
+  is connected. ChromeDeck installs a small extension, **ChromeDeck keyboard**, for
+  this; Chrome's own pages (such as the New Tab page and `chrome://` pages) and the
+  address bar are closed to extensions, so there use the toolbar's **Keyboard** or
+  the back gesture. **Preferences → Browser → Show keyboard for text fields**
+  turns it off and removes the extension at the next start. Removing or disabling
+  the extension in Chrome is kept; turning the setting back on reinstalls it.
 - **Fullscreen:** **Preferences → Output → Fullscreen** hides Android's status and
   navigation bars; swipe from the screen edge to show them briefly.
   **Hide cutout** also uses the area beside the camera cutout.
 - **External keyboard:** **Preferences → Keyboard → Show IME with external
   keyboard** controls whether Android's on-screen keyboard also opens while a USB
   or Bluetooth keyboard is connected.
-- **Browser settings** in **Preferences → Browser**:
+- **Browser settings** in **Preferences → Browser**, grouped as Display, Monitor,
+  Input, Chrome updates and System:
   - **Phone storage** — on by default. The phone's shared storage (Download,
     Documents and so on) appears to Chrome as `/root/Phone`, for example to load
     an unpacked extension (`chrome://extensions` → **Developer mode** → **Load
@@ -118,17 +127,16 @@ adb install -r chromedeck.apk
     browsing much faster. If Chrome fails to start with it, the app turns it off
     and says so here. Turn it off if Chrome crashes or misbehaves. Changes apply
     after restarting the app. Details: [video and GPU notes](docs/GPU-VIDEO.md).
-  - **Chrome updates** — Linux Chrome has no built-in updater, so the app checks
-    Google's repository while Chrome runs and downloads a newer
+  - **Chrome updates → Install updates** — Linux Chrome has no built-in updater,
+    so the app checks Google's repository while Chrome runs and downloads a newer
     `google-chrome-stable` in the background. It is installed before Chrome next
     starts, which takes a few seconds; a failed update never blocks startup.
     **Install automatically** (default) notifies when an update is ready, with
     **Restart now** (Chrome reopens its tabs); **Ask before installing** offers
     **Update**, **Later** or **Skip this version** first; **Off** stops checking.
-    **Check for Chrome updates** sets daily (default) or weekly checks,
-    **Chrome updates only on Wi-Fi** (on by default) keeps scheduled checks and
-    downloads off metered networks, and **Check for Chrome updates now** shows the
-    installed and the latest version and checks at once.
+    **Check for updates** sets daily (default) or weekly checks, **Only on Wi-Fi**
+    (on by default) keeps scheduled checks and downloads off metered networks, and
+    **Check now** shows the installed and the latest version and checks at once.
   - **Frame rate** — 30 fps by default to save battery. Chrome renders in
     software, and 30 fps uses 20–40% less CPU than the display's maximum.
     Choose 60 fps or **Display maximum** for smoother scrolling and animation.

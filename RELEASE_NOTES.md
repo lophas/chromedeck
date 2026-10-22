@@ -1,6 +1,25 @@
-# ChromeDeck 0.5.1 — Preview
+# ChromeDeck 0.5.2 — Preview
 
-## New in 0.5.1
+## New in 0.5.2
+
+- **Keyboard for text fields:** tapping a text field on a web page opens Android's
+  on-screen keyboard, and leaving it closes the keyboard, unless a hardware
+  keyboard is connected. A small built-in extension, **ChromeDeck keyboard**,
+  reports the taps; fields that pages focus by themselves do not open the
+  keyboard. Chrome's own pages, such as the New Tab page, and the address bar are
+  closed to extensions; there the toolbar's **Keyboard** or the back gesture opens
+  it. **Preferences → Browser → Show keyboard for text fields** turns it off and
+  removes the extension at the next start; removing or disabling the extension in
+  Chrome is kept, and turning the setting back on reinstalls it.
+
+- **Grouped browser settings:** **Preferences → Browser** is grouped into
+  Display, Monitor, Input, Chrome updates and System.
+
+Install over 0.5.x without uninstalling; the browser profile is kept.
+
+## 0.5.1
+
+### New in 0.5.1
 
 - **Chrome update settings:** **Preferences → Browser → Chrome updates** offers
   **Install automatically** (default), **Ask before installing** and **Off**,
@@ -8,7 +27,7 @@
   checked and downloaded in the background while Chrome runs, so startup no longer
   waits for them; a downloaded update installs before Chrome next starts. A
   notification offers **Restart now**, or in ask mode **Update**, **Later** and
-  **Skip this version**. **Check for Chrome updates now** shows the installed and
+  **Skip this version**. **Check now** shows the installed and
   the latest version.
 - **Chrome windows:** new browser windows open maximized; pop-up windows such as
   sign-in and payment windows keep their size. With more than one window the

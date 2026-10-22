@@ -12,19 +12,30 @@
     </PreferenceScreen>
     <!-- Stored as files in the app's runtime directory, read by the browser runtime. -->
     <PreferenceScreen app:key="browser">
-        <SwitchPreferenceCompat app:key="showToolbar" app:defaultValue="true" />
-        <ListPreference app:key="externalDisplay" app:defaultValue="ask" app:entries="@array/externalDisplayEntries" app:entryValues="@array/externalDisplayValues" />
-        <SwitchPreferenceCompat app:key="monitorStatusBar" app:defaultValue="true" />
-        <SeekBarPreference app:key="monitorStatusBarHeight" app:dependency="monitorStatusBar" app:defaultValue="37" app:min="20" android:max="80" app:showSeekBarValue="true" app:updatesContinuously="true" />
-        <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
-        <ListPreference app:key="chromeUpdateMode" app:defaultValue="auto" app:entries="@array/chromeUpdateModeEntries" app:entryValues="@array/chromeUpdateModeValues" />
-        <ListPreference app:key="chromeUpdateInterval" app:defaultValue="daily" app:entries="@array/chromeUpdateIntervalEntries" app:entryValues="@array/chromeUpdateIntervalValues" />
-        <SwitchPreferenceCompat app:key="chromeUpdateWifiOnly" app:defaultValue="true" />
-        <Preference app:key="chromeUpdateCheck" />
-        <SwitchPreferenceCompat app:key="phoneStorage" app:defaultValue="true" />
-        <ListPreference app:key="chromeScale" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />
-        <ListPreference app:key="chromeScaleExternal" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />
-        <ListPreference app:key="frameRateLimit" app:defaultValue="30" app:entries="@array/frameRateLimitEntries" app:entryValues="@array/frameRateLimitValues" />
+        <PreferenceCategory app:key="browserDisplay">
+            <ListPreference app:key="chromeScale" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />
+            <ListPreference app:key="chromeScaleExternal" app:defaultValue="auto" app:entries="@array/chromeScaleEntries" app:entryValues="@array/chromeScaleValues" />
+            <ListPreference app:key="frameRateLimit" app:defaultValue="30" app:entries="@array/frameRateLimitEntries" app:entryValues="@array/frameRateLimitValues" />
+            <SwitchPreferenceCompat app:key="showToolbar" app:defaultValue="true" />
+        </PreferenceCategory>
+        <PreferenceCategory app:key="browserMonitor">
+            <ListPreference app:key="externalDisplay" app:defaultValue="ask" app:entries="@array/externalDisplayEntries" app:entryValues="@array/externalDisplayValues" />
+            <SwitchPreferenceCompat app:key="monitorStatusBar" app:defaultValue="true" />
+            <SeekBarPreference app:key="monitorStatusBarHeight" app:dependency="monitorStatusBar" app:defaultValue="37" app:min="20" android:max="80" app:showSeekBarValue="true" app:updatesContinuously="true" />
+        </PreferenceCategory>
+        <PreferenceCategory app:key="browserInput">
+            <SwitchPreferenceCompat app:key="showKeyboardForTextFields" app:defaultValue="true" />
+        </PreferenceCategory>
+        <PreferenceCategory app:key="browserUpdates">
+            <ListPreference app:key="chromeUpdateMode" app:defaultValue="auto" app:entries="@array/chromeUpdateModeEntries" app:entryValues="@array/chromeUpdateModeValues" />
+            <ListPreference app:key="chromeUpdateInterval" app:defaultValue="daily" app:entries="@array/chromeUpdateIntervalEntries" app:entryValues="@array/chromeUpdateIntervalValues" />
+            <SwitchPreferenceCompat app:key="chromeUpdateWifiOnly" app:defaultValue="true" />
+            <Preference app:key="chromeUpdateCheck" />
+        </PreferenceCategory>
+        <PreferenceCategory app:key="browserSystem">
+            <SwitchPreferenceCompat app:key="phoneStorage" app:defaultValue="true" />
+            <SwitchPreferenceCompat app:key="prootAcceleration" app:defaultValue="true" app:persistent="false" />
+        </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen app:key="output">
         <ListPreference app:key="displayResolutionMode" app:defaultValue="native" app:entries="@array/displayResolutionVariants" app:entryValues="@array/displayResolutionVariants"  />

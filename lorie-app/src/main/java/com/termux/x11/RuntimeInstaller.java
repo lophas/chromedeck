@@ -70,6 +70,7 @@ public final class RuntimeInstaller {
             try (InputStream input = context.getAssets().open(script)) {
                 LinuxRuntime.writeText(new File(root, "usr/local/lib/desktop-chrome/" + script), read(input));
             }
+        installKeyboardExtension(context, root);
         LinuxRuntime.configureDns(context);
         JSONObject chrome = manifest.getJSONObject("chrome");
         String chromeSha = chrome.getString("sha256");
@@ -104,6 +105,55 @@ public final class RuntimeInstaller {
         updateChrome(context, progress);
         prepareAudio(context, progress, root);
         progress.update("Starting Chrome", -1);
+    }
+
+    static final String KEYBOARD_EXTENSION_ID = "mlfpakdjihkojooofakdipafhmmnndeh";
+    static final String KEYBOARD_EXTENSION_VERSION = "1.1";
+
+    /**
+     * The ChromeDeck keyboard extension, which reports taps on text fields so that the app
+     * can open Android's on-screen keyboard. Linux Chrome installs an external extension
+     * from a JSON file in its extensions directory and enables it without a prompt; its
+     * native messaging host passes the taps to the app. See extensions/chromedeck-keyboard.
+     * With Preferences → Keyboard → Show keyboard for text fields off, the JSON file is
+     * removed, and Chrome removes the extension. Removing or disabling it in Chrome is
+     * kept: Chrome does not reinstall an external extension that the user removed.
+     */
+    private static void installKeyboardExtension(Context context, File root) throws IOException {
+        File external = new File(root, "opt/google/chrome/extensions/" + KEYBOARD_EXTENSION_ID + ".json");
+        File nativeHost = new File(root, "etc/opt/chrome/native-messaging-hosts/com.chromedeck.keyboard.json");
+        if (!context.getSharedPreferences(context.getPackageName() + "_preferences", Context.MODE_PRIVATE)
+                .getBoolean("showKeyboardForTextFields", true)) {
+            external.delete();
+            nativeHost.delete();
+            return;
+        }
+        File dir = new File(root, "usr/local/lib/chromedeck-keyboard");
+        File crx = new File(dir, "chromedeck-keyboard.crx");
+        File host = new File(dir, "host.py");
+        if (!dir.isDirectory() && !dir.mkdirs())
+            throw new IOException("Cannot create " + dir);
+        try (InputStream input = context.getAssets().open("chromedeck-keyboard/chromedeck-keyboard.crx");
+             FileOutputStream output = new FileOutputStream(crx)) {
+            byte[] buffer = new byte[16384];
+            int count;
+            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+        }
+        try (InputStream input = context.getAssets().open("chromedeck-keyboard/host.py")) {
+            LinuxRuntime.writeText(host, read(input));
+        }
+        try {
+            android.system.Os.chmod(host.getAbsolutePath(), 0755);
+        } catch (android.system.ErrnoException error) {
+            throw new IOException("Cannot make the keyboard bridge executable", error);
+        }
+        LinuxRuntime.writeText(external,
+                "{ \"external_crx\": \"/usr/local/lib/chromedeck-keyboard/chromedeck-keyboard.crx\", "
+                        + "\"external_version\": \"" + KEYBOARD_EXTENSION_VERSION + "\" }\n");
+        LinuxRuntime.writeText(nativeHost,
+                "{ \"name\": \"com.chromedeck.keyboard\", \"description\": \"ChromeDeck keyboard bridge\", "
+                        + "\"path\": \"/usr/local/lib/chromedeck-keyboard/host.py\", \"type\": \"stdio\", "
+                        + "\"allowed_origins\": [\"chrome-extension://" + KEYBOARD_EXTENSION_ID + "/\"] }\n");
     }
 
     /** Installed Chrome version reported by the binary, shown in Preferences. */

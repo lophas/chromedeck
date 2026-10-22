@@ -286,24 +286,7 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             PreferenceScreen screen = getPreferenceScreen();
             if ((id = findId(screen.getKey())) != 0)
                 getPreferenceScreen().setTitle(getResources().getString(id));
-            for (int i=0; i<getPreferenceScreen().getPreferenceCount(); i++) {
-                Preference p = screen.getPreference(i);
-                p.setOnPreferenceChangeListener(this);
-                p.setPreferenceDataStore(prefs());
-
-                if ((id = findId(p.getKey())) != 0)
-                    p.setTitle(getResources().getString(id));
-
-                if ((id = findId(p.getKey() + "_summary")) != 0)
-                    p.setSummary(getResources().getString(id));
-
-                if (p instanceof ListPreference) {
-                    ListPreference list = (ListPreference) p;
-                    list.setEntries(prefs().keys.get(p.getKey()).asList().getEntries());
-                    list.setEntryValues(prefs().keys.get(p.getKey()).asList().getValues());
-                    list.setSummaryProvider(ListPreference.SimpleSummaryProvider.getInstance());
-                }
-            }
+            setUpPreferences(screen);
 
             with("showAdditionalKbd", p -> p.setLayoutResource(R.layout.preference));
             with("version", p -> p.setSummary(BuildConfig.VERSION_NAME));
@@ -464,6 +447,32 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             }
         }
 
+        /** Titles, summaries and storage for the preferences, also inside categories. */
+        private void setUpPreferences(androidx.preference.PreferenceGroup group) {
+            int id;
+            for (int i = 0; i < group.getPreferenceCount(); i++) {
+                Preference p = group.getPreference(i);
+                if ((id = findId(p.getKey())) != 0)
+                    p.setTitle(getResources().getString(id));
+                if (p instanceof androidx.preference.PreferenceCategory) {
+                    setUpPreferences((androidx.preference.PreferenceGroup) p);
+                    continue;
+                }
+                p.setOnPreferenceChangeListener(this);
+                p.setPreferenceDataStore(prefs());
+
+                if ((id = findId(p.getKey() + "_summary")) != 0)
+                    p.setSummary(getResources().getString(id));
+
+                if (p instanceof ListPreference) {
+                    ListPreference list = (ListPreference) p;
+                    list.setEntries(prefs().keys.get(p.getKey()).asList().getEntries());
+                    list.setEntryValues(prefs().keys.get(p.getKey()).asList().getValues());
+                    list.setSummaryProvider(ListPreference.SimpleSummaryProvider.getInstance());
+                }
+            }
+        }
+
         private void setAutomaticScale(String key, String detail) {
             ListPreference scale = findPreference(key);
             if (scale == null)
@@ -620,6 +629,21 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                 }
                 Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
                 return true;
+            }
+
+            // Turning it back on also reinstalls the keyboard extension if it was removed in
+            // Chrome; the session clears Chrome's record of that removal.
+            if ("showKeyboardForTextFields".contentEquals(key)) {
+                File marker = runtimeFile("tmp/desktop-chrome-keyboard-reinstall");
+                try {
+                    if ((Boolean) newValue)
+                        Files.write(marker.toPath(), new byte[0]);
+                    else
+                        marker.delete();
+                } catch (IOException e) {
+                    Log.w("LoriePreferences", "Cannot record the keyboard extension choice", e);
+                }
+                Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
             }
 
             if ("frameRateLimit".contentEquals(key))

@@ -1836,6 +1836,8 @@ public class MainActivity extends AppCompatActivity {
         chromeWindowsObserver = new android.os.FileObserver(file.getParent(),
                 android.os.FileObserver.CLOSE_WRITE | android.os.FileObserver.MOVED_TO) {
             @Override public void onEvent(int event, String path) {
+                if ("desktop-chrome-keyboard".equals(path))
+                    handler.post(MainActivity.this::onTextFieldTapped);
                 // Titles change often; the toolbar changes only with the number of windows.
                 if (file.getName().equals(path))
                     handler.post(() -> {
@@ -1845,6 +1847,34 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         chromeWindowsObserver.startWatching();
+    }
+
+    /**
+     * The ChromeDeck keyboard extension in Chrome reports a tap on a text field ("show") or
+     * focus leaving it ("hide"); Android's on-screen keyboard follows, unless a hardware
+     * keyboard is connected or Preferences → Browser → Show keyboard for text fields is off.
+     */
+    private void onTextFieldTapped() {
+        String state;
+        try {
+            state = new String(java.nio.file.Files.readAllBytes(new java.io.File(getFilesDir(),
+                    "runtime/tmp/desktop-chrome-keyboard").toPath())).trim();
+        } catch (Exception e) {
+            return;
+        }
+        Configuration config = getResources().getConfiguration();
+        boolean hardwareKeyboard = config.keyboard != Configuration.KEYBOARD_NOKEYS
+                && config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        if (!prefs.showKeyboardForTextFields.get() || hardwareKeyboard || !hasWindowFocus())
+            return;
+        View target = imeProxy != null ? imeProxy : getLorieView();
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (state.endsWith(" show")) {
+            target.requestFocus();
+            imm.showSoftInput(target, 0);
+        } else if (state.endsWith(" hide")) {
+            imm.hideSoftInputFromWindow(target.getWindowToken(), 0);
+        }
     }
 
     /** A monitor is connected while Chrome is on the phone, mirrored there. */
