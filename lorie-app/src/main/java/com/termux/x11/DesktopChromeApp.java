@@ -78,6 +78,7 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
         MainActivity.browserVisibilityListener = visible -> LinuxRuntime.writeBrowserVisibility(this, visible);
+        MainActivity.browserCommandListener = command -> LinuxRuntime.writeBrowserCommand(this, command);
         MainActivity.displayScaleListener = onMonitor -> LinuxRuntime.writeBrowserScale(this, displayScale(onMonitor));
         getSharedPreferences(getPackageName() + "_preferences", MODE_PRIVATE)
                 .registerOnSharedPreferenceChangeListener(scaleSettingListener);

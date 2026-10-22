@@ -10,13 +10,16 @@ xdg_app_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 mkdir -p "$xdg_app_dir"
 [ -f "$xdg_app_dir/mimeapps.list" ] || touch "$xdg_app_dir/mimeapps.list"
 mkdir -p "$XDG_CONFIG_HOME" /root/Downloads
-# On an external display Android's desktop caption bar covers the top of the screen;
-# an Openbox margin keeps maximized Chrome windows below it.
-openbox_config=/etc/xdg/openbox/rc.xml
-if [ "${DESKTOP_CHROME_TOP_MARGIN:-0}" -gt 0 ] 2>/dev/null; then
-    sed "/<margins>/,/<\/margins>/ s#<top>[0-9]*</top>#<top>$DESKTOP_CHROME_TOP_MARGIN</top>#" \
-        /etc/xdg/openbox/rc.xml > /tmp/desktop-chrome-openbox.xml && openbox_config=/tmp/desktop-chrome-openbox.xml
-fi
+# Openbox opens every Chrome browser window maximized, like a tab; pop-up windows, such
+# as sign-in and payment windows, keep their own size. On an external display in
+# Android's desktop mode the caption bar covers the top of the screen, and a top margin
+# keeps maximized windows below it.
+openbox_config=/tmp/desktop-chrome-openbox.xml
+top_margin=0
+[ "${DESKTOP_CHROME_TOP_MARGIN:-0}" -gt 0 ] 2>/dev/null && top_margin=$DESKTOP_CHROME_TOP_MARGIN
+sed -e "/<margins>/,/<\/margins>/ s#<top>[0-9]*</top>#<top>$top_margin</top>#" \
+    -e 's#</applications>#<application class="Google-chrome" role="browser"><maximized>yes</maximized></application></applications>#' \
+    /etc/xdg/openbox/rc.xml > "$openbox_config" || openbox_config=/etc/xdg/openbox/rc.xml
 openbox --sm-disable --config-file "$openbox_config" &
 wm_pid=$!
 # ChromeDeck writes "hidden" or "visible" to this pipe when it leaves or returns to the
@@ -71,7 +74,8 @@ case "${DESKTOP_CHROME_SCALE:-auto}" in
     auto) initial_scale=1 ;;
     *) initial_scale=$DESKTOP_CHROME_SCALE ;;
 esac
-python3 /usr/local/lib/desktop-chrome/session-x11.py "$initial_scale" "$scale_pipe" "$visibility_pipe" &
+python3 /usr/local/lib/desktop-chrome/session-x11.py "$initial_scale" "$scale_pipe" "$visibility_pipe" \
+    /tmp/desktop-chrome-windows &
 helper_pid=$!
 /opt/google/chrome/chrome \
     --no-sandbox \

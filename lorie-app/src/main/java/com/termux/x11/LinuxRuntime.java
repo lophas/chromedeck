@@ -191,6 +191,11 @@ public final class LinuxRuntime {
         writePipe(context, "desktop-chrome-visibility", visible ? "visible" : "hidden");
     }
 
+    /** Sends a command, such as next-window, to the session's X11 helper. */
+    public static void writeBrowserCommand(Context context, String command) {
+        writePipe(context, "desktop-chrome-visibility", command);
+    }
+
     /** Sets Chrome's display scale while it runs, through the session's settings pipe. */
     public static void writeBrowserScale(Context context, float scale) {
         writePipe(context, "desktop-chrome-scale", String.valueOf(scale));

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """ChromeDeck's helper on the X display: Chrome's display scale and its visibility.
 
-usage: session-x11.py SCALE SCALE_PIPE VISIBILITY_PIPE
+usage: session-x11.py SCALE SCALE_PIPE VISIBILITY_PIPE WINDOW_LIST
 
 Display scale: Chrome on Linux takes its scale from the desktop's Xft/DPI setting and
 follows changes of it, so moving between the phone and a monitor needs no restart. This
@@ -17,6 +17,13 @@ Visibility: ChromeDeck writes "hidden" or "visible" to VISIBILITY_PIPE when it l
 returns to the screen. Minimized Chrome stops drawing pages and slows down timers, as
 Chrome on a phone does in the background; audio keeps playing. "visible" restores every
 minimized window, so a restore never depends on an earlier "hidden".
+
+While ChromeDeck can be seen, a window minimized otherwise, for example by a key, is
+restored at once: there is no taskbar to bring it back. A browser window that is no
+longer maximized, for example by Chrome's restore button, is maximized again, so that
+it keeps filling the screen like a tab; pop-up and full screen windows keep their size. "activate WINDOW" on the same pipe
+brings a window to the front, for the toolbar's Windows list; WINDOW_LIST is kept up
+to date with one line per window: its id, 1 for the active window, and its title.
 
 Both pipes stay open in this one long-running process, so no message is lost between
 writers. Uses libX11, which Chrome already needs.
@@ -146,6 +153,79 @@ def set_visible(display, root, visible):
     x.XFlush(display)
 
 
+def window_role(display, window):
+    kind, fmt, count, after, data = ul(), ctypes.c_int(), ul(), ul(), vp()
+    if x.XGetWindowProperty(display, window, x.XInternAtom(display, b"WM_WINDOW_ROLE", 0), 0, 64, 0, 0,
+                            ctypes.byref(kind), ctypes.byref(fmt), ctypes.byref(count),
+                            ctypes.byref(after), ctypes.byref(data)) != 0 or not data:
+        return b""
+    role = ctypes.string_at(data, count.value) if fmt.value == 8 else b""
+    x.XFree(data)
+    return role
+
+
+def keep_window(display, root, window):
+    """Restores a minimized window, and maximizes a browser window again."""
+    state = atom_list(display, window, b"_NET_WM_STATE")
+    atom = lambda name: x.XInternAtom(display, name, 0)
+    if atom(b"_NET_WM_STATE_HIDDEN") in state:
+        x.XMapWindow(display, window)
+    elif atom(b"_NET_WM_STATE_FULLSCREEN") not in state \
+            and atom(b"_NET_WM_STATE_MAXIMIZED_HORZ") not in state \
+            and window_role(display, window) == b"browser":
+        event = Event()
+        event.client.type = 33  # ClientMessage
+        event.client.window = window
+        event.client.message_type = atom(b"_NET_WM_STATE")
+        event.client.format = 32
+        event.client.data[:] = [1, atom(b"_NET_WM_STATE_MAXIMIZED_VERT"), atom(b"_NET_WM_STATE_MAXIMIZED_HORZ"), 1, 0]
+        # SubstructureRedirectMask | SubstructureNotifyMask
+        x.XSendEvent(display, root, 0, (1 << 20) | (1 << 19), ctypes.byref(event))
+
+
+def activate(display, root, window):
+    """Brings a window to the front."""
+    if window not in atom_list(display, root, b"_NET_CLIENT_LIST"):
+        return
+    event = Event()
+    event.client.type = 33  # ClientMessage
+    event.client.window = window
+    event.client.message_type = x.XInternAtom(display, b"_NET_ACTIVE_WINDOW", 0)
+    event.client.format = 32
+    event.client.data[:] = [2, 0, 0, 0, 0]  # from a pager, which the window manager obeys
+    # SubstructureRedirectMask | SubstructureNotifyMask
+    x.XSendEvent(display, root, 0, (1 << 20) | (1 << 19), ctypes.byref(event))
+    x.XFlush(display)
+
+
+def title(display, window):
+    for name in (b"_NET_WM_NAME", b"WM_NAME"):
+        kind, fmt, count, after, data = ul(), ctypes.c_int(), ul(), ul(), vp()
+        if x.XGetWindowProperty(display, window, x.XInternAtom(display, name, 0), 0, 1024, 0, 0,
+                                ctypes.byref(kind), ctypes.byref(fmt), ctypes.byref(count),
+                                ctypes.byref(after), ctypes.byref(data)) == 0 and data:
+            text = ctypes.string_at(data, count.value) if fmt.value == 8 else b""
+            x.XFree(data)
+            if text:
+                return text.decode("utf-8", "replace")
+    return ""
+
+
+def write_windows(display, root, path):
+    """The window list for the toolbar: id, 1 for the active window, and title."""
+    active = atom_list(display, root, b"_NET_ACTIVE_WINDOW")
+    rows = []
+    for window in atom_list(display, root, b"_NET_CLIENT_LIST"):
+        name = " ".join(title(display, window).split())
+        if name.endswith(" - Google Chrome"):
+            name = name[:-len(" - Google Chrome")]
+        rows.append("%d\t%d\t%s\n" % (window, 1 if window in active else 0, name))
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.writelines(rows)
+    os.replace(tmp, path)
+
+
 def lines(fd, pending):
     """Complete lines read from a pipe, and the incomplete rest."""
     try:
@@ -165,7 +245,7 @@ def settings(serial, dpi):
 
 
 def main():
-    scale, scale_pipe, visibility_pipe = float(sys.argv[1]), sys.argv[2], sys.argv[3]
+    scale, scale_pipe, visibility_pipe, list_file = float(sys.argv[1]), sys.argv[2], sys.argv[3], sys.argv[4]
     display = x.XOpenDisplay(None)
     if not display:
         sys.exit("Cannot open the X display")
@@ -197,9 +277,14 @@ def main():
     client_list = x.XInternAtom(display, b"_NET_CLIENT_LIST", 0)
     normal_hints = x.XInternAtom(display, b"WM_NORMAL_HINTS", 0)
     x.XSelectInput(display, root, PROPERTY_CHANGE_MASK)
+    wm_state = x.XInternAtom(display, b"_NET_WM_STATE", 0)
     watched = set()
     watch_windows(display, root, watched)
+    names = {x.XInternAtom(display, b"_NET_WM_NAME", 0), x.XInternAtom(display, b"WM_NAME", 0),
+             x.XInternAtom(display, b"_NET_ACTIVE_WINDOW", 0), client_list}
+    write_windows(display, root, list_file)
     x.XFlush(display)
+    visible = True
 
     # Opened for reading and writing, so that the pipes stay open between writers.
     scales = os.open(scale_pipe, os.O_RDWR | os.O_NONBLOCK)
@@ -212,10 +297,17 @@ def main():
             x.XNextEvent(display, ctypes.byref(event))
             if event.property.type != PROPERTY_NOTIFY:
                 continue
-            if event.property.window == root and event.property.atom == client_list:
-                watch_windows(display, root, watched)
-            elif event.property.atom == normal_hints:
-                fit_minimum(display, root, event.property.window)
+            try:
+                if event.property.window == root and event.property.atom == client_list:
+                    watch_windows(display, root, watched)
+                if event.property.atom in names:
+                    write_windows(display, root, list_file)
+                if event.property.atom == normal_hints:
+                    fit_minimum(display, root, event.property.window)
+                elif event.property.atom == wm_state and visible:
+                    keep_window(display, root, event.property.window)
+            except Exception as error:
+                print("ChromeDeck X11 helper:", error, file=sys.stderr)
         x.XFlush(display)
         ready, _, _ = select.select([connection, scales, visibility], [], [])
         # A bad message or a vanished window must not end the helper.
@@ -224,7 +316,10 @@ def main():
                 received, pending_visibility = lines(visibility, pending_visibility)
                 for line in received:
                     if line in (b"hidden", b"visible"):
-                        set_visible(display, root, line == b"visible")
+                        visible = line == b"visible"
+                        set_visible(display, root, visible)
+                    elif line.startswith(b"activate "):
+                        activate(display, root, int(line[9:]))
             if scales in ready:
                 received, pending_scale = lines(scales, pending_scale)
                 for line in received:

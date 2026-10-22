@@ -10,6 +10,21 @@
   notification offers **Restart now**, or in ask mode **Update**, **Later** and
   **Skip this version**. **Check for Chrome updates now** shows the installed and
   the latest version.
+- **Chrome windows:** new browser windows open maximized; pop-up windows such as
+  sign-in and payment windows keep their size. With more than one window the
+  toolbar shows **Windows**, a list of the windows by title; tapping one brings it
+  to the front. While ChromeDeck is on screen, windows no longer minimize, and
+  Chrome's restore button does not shrink a browser window.
+- **Toolbar place:** the toolbar's place is its handle's. Unfolding shifts it only
+  as far as the screen edge needs, and folding returns the handle to its place; a
+  moved toolbar keeps its new place.
+
+### Fixes in 0.5.1
+
+- After the screen turned off and on, ChromeDeck could stay black with only the
+  mouse pointer: Chrome had been minimized and the message to restore it was lost.
+  Minimizing and restoring now run in the session's long-running X11 helper, and
+  every return to ChromeDeck restores Chrome.
 
 Install over 0.5.0 without uninstalling; the browser profile is kept. Updates
 turned off with the earlier switch stay off.

@@ -82,12 +82,18 @@ adb install -r chromedeck.apk
 
 - **Toolbar:** a small toolbar on the phone screen offers **Settings**,
   **Keyboard** (Android's on-screen keyboard), **Zoom** (− / + steps of the
-  display scale for the current display, or **Auto**), **Monitor** or **Mirroring** when a
-  monitor is connected, the phone button while Chrome is on the monitor, and
-  **Exit** (after a confirmation). Drag it by its handle, by touch or with a mouse
-  that Chrome has not captured; tap the handle to fold it down to the handle.
-  Its place is kept separately for the phone and for the monitor touchpad.
-  **Preferences → Browser → Toolbar** hides it.
+  display scale for the current display, or **Auto**), **Monitor** or
+  **Mirroring** when a monitor is connected, the phone button while Chrome is on
+  the monitor, **Windows** (a list of the Chrome windows by title; tap one to
+  bring it to the front; shown with more than one window), and **Exit** (after a
+  confirmation). Drag it by its handle, by touch or with a mouse that Chrome has
+  not captured; tap the handle to fold it down to the handle. Its place is kept
+  separately for the phone and for the monitor touchpad. **Preferences → Browser →
+  Toolbar** hides it.
+- **Chrome windows:** new Chrome windows open maximized, like tabs; pop-up windows,
+  such as sign-in and payment windows, keep their size. Windows cannot be minimized
+  or restored to a smaller size while ChromeDeck is on screen, as there is no
+  taskbar to bring them back.
 - **Notification:** the app's notification offers the same actions, as many as
   fit: **Settings**, **Keyboard** and **Exit**, or **Monitor** instead of Exit
   while a monitor mirrors the phone; **Settings**, **Mirroring** and **Use phone**

@@ -65,6 +65,8 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_toolbar_zoom">Zoom: Chrome\'s display scale</string>
     <string name="lorie_toolbar_zoom_auto">Auto</string>
     <string name="lorie_toolbar_zoom_auto_suffix">(Auto)</string>
+    <string name="lorie_toolbar_windows">Windows: choose the Chrome window to show</string>
+    <string name="lorie_toolbar_windows_untitled">Untitled window</string>
     <string name="lorie_toolbar_handle">Drag to move the toolbar, tap to fold or unfold it</string>
     <string name="lorie_toolbar_monitor">Monitor: Chrome full screen on the monitor</string>
     <string name="lorie_toolbar_mirroring">Mirroring: Chrome back on the phone</string>

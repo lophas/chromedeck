@@ -372,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
 
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         displayManager.registerDisplayListener(presentationDisplayListener, handler);
+        watchChromeWindows();
         registerReceiver(screenStateReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF) {{
             addAction(Intent.ACTION_SCREEN_ON);
         }});
@@ -439,6 +440,8 @@ public class MainActivity extends AppCompatActivity {
 
     /** Set by the app to minimize Chrome while nobody can see it. */
     public static Consumer<Boolean> browserVisibilityListener;
+    /** Set by the app to send a command, such as next-window, to the browser session. */
+    public static Consumer<String> browserCommandListener;
     /** Set by the app to change Chrome's display scale when it moves to or from the monitor. */
     public static Consumer<Boolean> displayScaleListener;
     private boolean started;
@@ -494,6 +497,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (!redirected)
             unregisterReceiver(screenStateReceiver);
+        if (chromeWindowsObserver != null)
+            chromeWindowsObserver.stopWatching();
         handler.removeCallbacks(hideBrowser);
         if (displayManager != null)
             displayManager.unregisterDisplayListener(presentationDisplayListener);
@@ -1653,17 +1658,21 @@ public class MainActivity extends AppCompatActivity {
         FloatingToolbar.Item keyboard = new FloatingToolbar.Item(R.drawable.ic_extra_key_keyboard, R.string.lorie_toolbar_keyboard, this::showKeyboard);
         FloatingToolbar.Item zoom = new FloatingToolbar.Item(R.drawable.ic_zoom_in, R.string.lorie_toolbar_zoom, this::showZoom);
         FloatingToolbar.Item exit = new FloatingToolbar.Item(R.drawable.lorie_ic_exit, R.string.lorie_toolbar_exit, this::confirmExit);
+        // Only with more than one Chrome window: a list of them to choose from.
+        shownWindowCount = chromeWindows().size();
+        FloatingToolbar.Item windows = shownWindowCount > 1 ? new FloatingToolbar.Item(R.drawable.lorie_ic_windows,
+                R.string.lorie_toolbar_windows, this::showWindowList) : null;
         if (presentation != null)
-            toolbar.show("touchpad", settings, keyboard, zoom,
+            toolbar.show("touchpad", settings, keyboard, zoom, windows,
                     new FloatingToolbar.Item(R.drawable.lorie_ic_mirroring, R.string.lorie_toolbar_mirroring, () -> setPresentationChoice(false)),
                     new FloatingToolbar.Item(R.drawable.lorie_ic_phone, R.string.lorie_toolbar_phone, this::togglePhoneScreenOff),
                     exit);
         else if (isMonitorAvailable())
-            toolbar.show("phone", settings, keyboard, zoom,
+            toolbar.show("phone", settings, keyboard, zoom, windows,
                     new FloatingToolbar.Item(R.drawable.lorie_ic_monitor, R.string.lorie_toolbar_monitor, () -> setPresentationChoice(true)),
                     exit);
         else
-            toolbar.show("phone", settings, keyboard, zoom, exit);
+            toolbar.show("phone", settings, keyboard, zoom, windows, exit);
         toolbar.bringToFront();
     }
 
@@ -1757,6 +1766,85 @@ public class MainActivity extends AppCompatActivity {
         }
         if (next != null)
             zoomPreference().put(next);
+    }
+
+    /** Chrome's windows, which the session's X11 helper lists in a file: id, active, title. */
+    private List<String[]> chromeWindows() {
+        List<String[]> windows = new ArrayList<>();
+        try {
+            for (String line : java.nio.file.Files.readAllLines(chromeWindowsFile().toPath()))
+                if (line.split("\t", 3).length == 3)
+                    windows.add(line.split("\t", 3));
+        } catch (Exception ignored) {
+        }
+        return windows;
+    }
+
+    private int shownWindowCount;
+
+    /** The toolbar's Windows list: tapping a window's title brings it to the front. */
+    private void showWindowList() {
+        float dp = getResources().getDisplayMetrics().density;
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        background.setColor(0xF0202124);
+        background.setCornerRadius(16 * dp);
+        list.setBackground(background);
+        list.setPadding(0, (int) (6 * dp), 0, (int) (6 * dp));
+        android.widget.PopupWindow popup = new android.widget.PopupWindow(list,
+                Math.min(frm.getWidth() - (int) (32 * dp), (int) (360 * dp)), ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setOutsideTouchable(true);
+        for (String[] window : chromeWindows()) {
+            TextView row = new TextView(this);
+            boolean active = "1".equals(window[1]);
+            String title = window[2].isEmpty() ? getString(R.string.lorie_toolbar_windows_untitled) : window[2];
+            row.setText((active ? "✓  " : "    ") + title);
+            row.setTextColor(android.graphics.Color.WHITE);
+            row.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            row.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+            row.setSingleLine(true);
+            row.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.setPadding((int) (16 * dp), (int) (12 * dp), (int) (16 * dp), (int) (12 * dp));
+            row.setOnClickListener(v -> {
+                if (browserCommandListener != null)
+                    browserCommandListener.accept("activate " + window[0]);
+                popup.dismiss();
+            });
+            list.addView(row);
+        }
+        list.measure(View.MeasureSpec.makeMeasureSpec(popup.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.UNSPECIFIED);
+        int[] at = new int[2];
+        toolbar.getLocationInWindow(at);
+        // Above the toolbar in the lower half of the screen, below it in the upper half.
+        boolean above = at[1] > frm.getHeight() / 2;
+        int y = above ? at[1] - list.getMeasuredHeight() - (int) (8 * dp) : at[1] + toolbar.getHeight() + (int) (8 * dp);
+        int x = Math.max((int) (16 * dp), Math.min(at[0], frm.getWidth() - popup.getWidth() - (int) (16 * dp)));
+        popup.showAtLocation(toolbar, Gravity.NO_GRAVITY, x, Math.max(0, y));
+    }
+
+    private java.io.File chromeWindowsFile() {
+        return new java.io.File(getFilesDir(), "runtime/tmp/desktop-chrome-windows");
+    }
+
+    /** Shows the toolbar's Windows button when a second Chrome window opens. */
+    private android.os.FileObserver chromeWindowsObserver;
+
+    private void watchChromeWindows() {
+        java.io.File file = chromeWindowsFile();
+        chromeWindowsObserver = new android.os.FileObserver(file.getParent(),
+                android.os.FileObserver.CLOSE_WRITE | android.os.FileObserver.MOVED_TO) {
+            @Override public void onEvent(int event, String path) {
+                // Titles change often; the toolbar changes only with the number of windows.
+                if (file.getName().equals(path))
+                    handler.post(() -> {
+                        if (chromeWindows().size() != shownWindowCount)
+                            updateToolbar();
+                    });
+            }
+        };
+        chromeWindowsObserver.startWatching();
     }
 
     /** A monitor is connected while Chrome is on the phone, mirrored there. */

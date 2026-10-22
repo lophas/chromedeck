@@ -39,10 +39,19 @@ public class FloatingToolbar extends LinearLayout {
         handle = button(R.drawable.lorie_ic_drag, R.string.lorie_toolbar_handle);
         handle.setOnTouchListener(new HandleTouch());
         addView(handle);
-        addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> place());
+        // Layout passes are reported also without a change; only a new width (folding,
+        // unfolding, other buttons) places the toolbar again.
+        addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol)
+                place();
+        });
     }
 
-    private final OnLayoutChangeListener parentLayout = (v, l, t, r, b, ol, ot, or, ob) -> place();
+    private final OnLayoutChangeListener parentLayout = (v, l, t, r, b, ol, ot, or, ob) -> {
+        if (r - l != or - ol || b - t != ob - ot)
+            place();
+    };
+    private boolean dragging;
 
     @Override protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -72,6 +81,8 @@ public class FloatingToolbar extends LinearLayout {
         this.mode = mode;
         removeViews(1, getChildCount() - 1);
         for (Item item : items) {
+            if (item == null)
+                continue;
             ImageButton button = button(item.icon, item.description);
             button.setOnClickListener(v -> {
                 highlight();
@@ -104,18 +115,23 @@ public class FloatingToolbar extends LinearLayout {
             getChildAt(i).setVisibility(collapsed() ? GONE : VISIBLE);
     }
 
-    /** The default places: the bottom over Chrome on the phone, the top on the touchpad. */
-    private float storedCenterY() {
-        return store.getFloat("toolbarY_" + mode, "phone".equals(mode) ? 0.9f : 0.06f);
-    }
-
-    /** Moves the toolbar to the stored position, kept inside its parent. */
+    /**
+     * Moves the toolbar to its place, kept inside its parent. The place is the handle's:
+     * the toolbar unfolds from the handle, shifted only as far as the screen edge needs,
+     * and the handle returns to its place when the toolbar folds. Until the user moves it,
+     * it is centered, at the bottom over Chrome on the phone and at the top on the
+     * touchpad.
+     */
     private void place() {
         View parent = (View) getParent();
-        if (parent == null || getWidth() == 0)
+        if (parent == null || getWidth() == 0 || dragging)
             return;
-        float x = store.getFloat("toolbarX_" + mode, 0.5f) * parent.getWidth() - getWidth() / 2f;
-        float y = storedCenterY() * parent.getHeight() - getHeight() / 2f;
+        float x = store.contains("toolbarLeft_" + mode)
+                ? store.getFloat("toolbarLeft_" + mode, 0) * parent.getWidth()
+                : (parent.getWidth() - getWidth()) / 2f;
+        float y = store.contains("toolbarTop_" + mode)
+                ? store.getFloat("toolbarTop_" + mode, 0) * parent.getHeight()
+                : ("phone".equals(mode) ? 0.9f : 0.06f) * parent.getHeight() - getHeight() / 2f;
         setTranslationX(clamp(x, parent.getWidth() - getWidth()));
         setTranslationY(clamp(y, parent.getHeight() - getHeight()));
     }
@@ -133,7 +149,6 @@ public class FloatingToolbar extends LinearLayout {
 
     private class HandleTouch implements OnTouchListener {
         private float downX, downY, startX, startY;
-        private boolean dragging;
 
         @SuppressLint("ClickableViewAccessibility")
         @Override public boolean onTouch(View v, MotionEvent e) {
@@ -159,24 +174,22 @@ public class FloatingToolbar extends LinearLayout {
                     return true;
                 case MotionEvent.ACTION_UP:
                     if (dragging && parent != null) {
+                        // Where the user puts it is the handle's place, also when unfolded.
                         store.edit()
-                                .putFloat("toolbarX_" + mode, (getTranslationX() + getWidth() / 2f) / parent.getWidth())
-                                .putFloat("toolbarY_" + mode, (getTranslationY() + getHeight() / 2f) / parent.getHeight())
+                                .putFloat("toolbarLeft_" + mode, getTranslationX() / parent.getWidth())
+                                .putFloat("toolbarTop_" + mode, getTranslationY() / parent.getHeight())
                                 .apply();
+                        dragging = false;
                     } else {
-                        // Collapsing keeps the handle where it is: the toolbar grows from it.
-                        float handleX = getTranslationX();
+                        // The width change places it again: unfolded from the handle, or
+                        // folded back to the handle's place.
+                        dragging = false;
                         store.edit().putBoolean("toolbarCollapsed_" + mode, !collapsed()).apply();
                         applyCollapsed();
-                        if (parent != null)
-                            post(() -> {
-                                setTranslationX(clamp(handleX, parent.getWidth() - getWidth()));
-                                store.edit().putFloat("toolbarX_" + mode,
-                                        (getTranslationX() + getWidth() / 2f) / parent.getWidth()).apply();
-                            });
                     }
                     return true;
                 case MotionEvent.ACTION_CANCEL:
+                    dragging = false;
                     return true;
             }
             return false;
