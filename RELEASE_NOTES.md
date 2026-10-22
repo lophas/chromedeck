@@ -1,11 +1,11 @@
-# ChromeDeck 0.4.1 — Preview
+# ChromeDeck 0.5.0 — Preview
 
-## New in 0.4.1
+## New in 0.5.0
 
 - **Automatic display scale:** **Automatic** in **Preferences → Browser → Display
   scale** now picks a scale for the display: from Android's display density on the
   phone (250% on a 480 dpi phone), from the resolution on a monitor (125% at 1080p,
-  150% at 1440p, 200% at 2160p). New steps up to 400%; the
+  150% at 1440p, 200% at 2160p). 25% steps up to 300%; the
   settings show the scale that Automatic picks.
 - **Display scale follows the display:** Chrome rescales at once, without a
   restart, when it moves between the phone and a monitor and when the scale
@@ -13,8 +13,9 @@
   setting instead of a launch option. With a monitor connected, Chrome starts
   after the monitor question.
 - **Toolbar on the phone too:** the touchpad's toolbar is now also on the phone
-  screen over Chrome: **Settings**, **Keyboard**, **Monitor** when a monitor is
-  connected, and **Exit**. Drag it by its handle (touch, or a mouse that Chrome has
+  screen over Chrome: **Settings**, **Keyboard**, **Zoom**, **Monitor** when a
+  monitor is connected, and **Exit**. **Zoom** steps the display scale of the
+  current display with − / +, or returns it to **Auto**. Drag it by its handle (touch, or a mouse that Chrome has
   not captured) and tap the handle to fold it; its place is kept per mode.
   **Preferences → Browser → Toolbar** hides it.
 - **Notification** buttons match the toolbar: **Settings**, **Keyboard**, **Exit**
@@ -24,7 +25,10 @@
   **Keep mirroring** in the question, **Monitor** / **Mirroring** in the
   notification.
 
-Install over 0.4.0 without uninstalling; the browser profile is kept.
+- At a large display scale on the phone, Chrome's window now stays as wide as the
+  screen instead of reaching past its right edge.
+
+Install over 0.4.x without uninstalling; the browser profile is kept.
 
 ## 0.4.0
 

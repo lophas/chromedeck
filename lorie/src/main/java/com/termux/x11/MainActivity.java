@@ -57,6 +57,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -1649,19 +1650,112 @@ public class MainActivity extends AppCompatActivity {
             return;
         FloatingToolbar.Item settings = new FloatingToolbar.Item(R.drawable.ic_extra_key_settings, R.string.lorie_toolbar_settings, this::openSettings);
         FloatingToolbar.Item keyboard = new FloatingToolbar.Item(R.drawable.ic_extra_key_keyboard, R.string.lorie_toolbar_keyboard, this::showKeyboard);
+        FloatingToolbar.Item zoom = new FloatingToolbar.Item(R.drawable.ic_zoom_in, R.string.lorie_toolbar_zoom, this::showZoom);
         FloatingToolbar.Item exit = new FloatingToolbar.Item(R.drawable.lorie_ic_exit, R.string.lorie_toolbar_exit, this::confirmExit);
         if (presentation != null)
-            toolbar.show("touchpad", settings, keyboard,
+            toolbar.show("touchpad", settings, keyboard, zoom,
                     new FloatingToolbar.Item(R.drawable.lorie_ic_mirroring, R.string.lorie_toolbar_mirroring, () -> setPresentationChoice(false)),
                     new FloatingToolbar.Item(R.drawable.lorie_ic_phone, R.string.lorie_toolbar_phone, this::togglePhoneScreenOff),
                     exit);
         else if (isMonitorAvailable())
-            toolbar.show("phone", settings, keyboard,
+            toolbar.show("phone", settings, keyboard, zoom,
                     new FloatingToolbar.Item(R.drawable.lorie_ic_monitor, R.string.lorie_toolbar_monitor, () -> setPresentationChoice(true)),
                     exit);
         else
-            toolbar.show("phone", settings, keyboard, exit);
+            toolbar.show("phone", settings, keyboard, zoom, exit);
         toolbar.bringToFront();
+    }
+
+    /**
+     * The toolbar's zoom: steps Preferences → Browser → Display scale for the display
+     * Chrome is on, which Chrome follows at once.
+     */
+    private void showZoom() {
+        float dp = getResources().getDisplayMetrics().density;
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        background.setColor(0xF0202124);
+        background.setCornerRadius(24 * dp);
+        row.setBackground(background);
+        int pad = (int) (8 * dp);
+        row.setPadding(pad, 0, pad, 0);
+        TextView value = new TextView(this);
+        value.setTextColor(android.graphics.Color.WHITE);
+        value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        value.setGravity(Gravity.CENTER);
+        value.setMinWidth((int) (96 * dp));
+        Runnable refresh = () -> value.setText(zoomScaleText());
+        row.addView(zoomButton("−", () -> stepZoom(-1), refresh));
+        row.addView(value);
+        row.addView(zoomButton("+", () -> stepZoom(1), refresh));
+        row.addView(zoomButton(getString(R.string.lorie_toolbar_zoom_auto), () -> zoomPreference().put("auto"), refresh));
+        refresh.run();
+        android.widget.PopupWindow popup = new android.widget.PopupWindow(row,
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup.setOutsideTouchable(true);
+        row.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        int[] at = new int[2];
+        toolbar.getLocationInWindow(at);
+        // Above the toolbar in the lower half of the screen, below it in the upper half.
+        boolean above = at[1] > frm.getHeight() / 2;
+        int y = above ? at[1] - row.getMeasuredHeight() - (int) (8 * dp) : at[1] + toolbar.getHeight() + (int) (8 * dp);
+        popup.showAtLocation(toolbar, Gravity.NO_GRAVITY, at[0], y);
+    }
+
+    private Button zoomButton(String label, Runnable action, Runnable refresh) {
+        Button button = new Button(this, null, android.R.attr.borderlessButtonStyle);
+        button.setText(label);
+        button.setAllCaps(false);
+        button.setTextColor(android.graphics.Color.WHITE);
+        button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, label.length() == 1 ? 22 : 16);
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setSingleLine(true);
+        button.setOnClickListener(v -> {
+            action.run();
+            refresh.run();
+        });
+        return button;
+    }
+
+    private LoriePreferences.PrefsProto.ListPreference zoomPreference() {
+        return presentation != null ? prefs.chromeScaleExternal : prefs.chromeScale;
+    }
+
+    /** The scale Chrome uses now on its display, also when the setting is Automatic. */
+    private float currentZoom() {
+        String value = zoomPreference().get();
+        if (!"auto".equals(value))
+            try {
+                return Float.parseFloat(value);
+            } catch (NumberFormatException ignored) {
+            }
+        Display monitor = AutoScale.monitorDisplay(this);
+        return presentation != null ? (monitor == null ? 1f : AutoScale.monitor(monitor)) : AutoScale.phone(this);
+    }
+
+    private String zoomScaleText() {
+        String text = AutoScale.percent(currentZoom());
+        return "auto".equals(zoomPreference().get()) ? text + " " + getString(R.string.lorie_toolbar_zoom_auto_suffix) : text;
+    }
+
+    /** Moves to the next lower or higher step of the setting's list. */
+    private void stepZoom(int direction) {
+        float current = currentZoom();
+        String[] steps = getResources().getStringArray(R.array.chromeScaleValues);
+        String next = null;
+        for (int i = direction > 0 ? 0 : steps.length - 1; i >= 0 && i < steps.length; i += direction) {
+            if ("auto".equals(steps[i]))
+                continue;
+            float step = Float.parseFloat(steps[i]);
+            if (direction > 0 ? step > current + 0.01f : step < current - 0.01f) {
+                next = steps[i];
+                break;
+            }
+        }
+        if (next != null)
+            zoomPreference().put(next);
     }
 
     /** A monitor is connected while Chrome is on the phone, mirrored there. */

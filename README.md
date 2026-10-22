@@ -81,7 +81,8 @@ adb install -r chromedeck.apk
 ## Getting started
 
 - **Toolbar:** a small toolbar on the phone screen offers **Settings**,
-  **Keyboard** (Android's on-screen keyboard), **Monitor** or **Mirroring** when a
+  **Keyboard** (Android's on-screen keyboard), **Zoom** (− / + steps of the
+  display scale for the current display, or **Auto**), **Monitor** or **Mirroring** when a
   monitor is connected, the phone button while Chrome is on the monitor, and
   **Exit** (after a confirmation). Drag it by its handle, by touch or with a mouse
   that Chrome has not captured; tap the handle to fold it down to the handle.
@@ -142,13 +143,13 @@ adb install -r chromedeck.apk
   buttons; **Preferences → Browser → Battery and clock on external display** turns
   it off, and **Battery and clock height** matches it to Chrome's tab strip at
   another display scale.
-- **Display scale:** **Preferences → Browser → Display scale — phone** and
-  **— monitor** make Chrome's interface and pages larger at full sharpness, like a
-  HiDPI display, from 100% to 400%. **Automatic** (the default) follows Android's
-  display density on the phone, a little smaller for Chrome's desktop interface (250%
-  on a 480 dpi phone), and the resolution on a monitor (125% at 1080p, 150% at
-  1440p, 200% at 2160p). Chrome follows at once when it moves between the phone and
-  a monitor, and when the setting changes.
+- **Display scale:** **Preferences → Browser → Display scale — phone** and **—
+  monitor** make Chrome's interface and pages larger at full sharpness, like a
+  HiDPI display, from 100% to 300% in 25% steps. **Automatic** (the default)
+  follows Android's display density on the phone, a little smaller for Chrome's
+  desktop interface (250% on a 480 dpi phone), and the resolution on a monitor
+  (125% at 1080p, 150% at 1440p, 200% at 2160p). Chrome follows at once when it
+  moves between the phone and a monitor, and when the setting changes.
 - **Tabs after a restart:** each profile starts set to Chrome's **On startup →
   Continue where you left off**, so the last session reopens without a crash
   prompt. You can change this in Chrome's settings.

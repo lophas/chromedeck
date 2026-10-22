@@ -41,8 +41,8 @@ public final class AutoScale {
         return Math.round(scale * 100) + "%";
     }
 
-    /** To the 25% steps of the setting, between 100% and 400%. */
+    /** To the 25% steps of the setting, between 100% and 300%. */
     private static float round(float scale) {
-        return Math.max(1f, Math.min(4f, Math.round(scale * 4) / 4f));
+        return Math.max(1f, Math.min(3f, Math.round(scale * 4) / 4f));
     }
 }

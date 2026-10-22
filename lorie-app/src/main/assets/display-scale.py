@@ -7,10 +7,16 @@ Chrome on Linux takes its scale from the desktop's Xft/DPI setting and follows c
 of it, so moving between the phone and a monitor needs no restart. This process owns
 the XSETTINGS selection, as a desktop's settings daemon would, and sets Xft/DPI to
 SCALE × 96; each line written to PIPE, such as "1.25", sets a new scale.
+
+Chrome also sets a minimum window size, from its toolbar, in its own units; at a large
+scale on the narrow phone screen that is wider than the screen, and the window manager
+would then keep a maximized window wider than the screen. Chrome fits a narrower window
+well, so a minimum larger than the screen is removed whenever Chrome sets it.
 Uses libX11, which Chrome already needs.
 """
 import ctypes
 import os
+import select
 import struct
 import sys
 
@@ -32,6 +38,31 @@ x.XGetSelectionOwner.argtypes = [vp, ul]
 x.XChangeProperty.argtypes = [vp, ul, ul, ul, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
 x.XSendEvent.argtypes = [vp, ul, ctypes.c_int, ctypes.c_long, vp]
 x.XFlush.argtypes = [vp]
+x.XGetWindowProperty.argtypes = [vp, ul, ul, ctypes.c_long, ctypes.c_long, ctypes.c_int, ul,
+                                 ctypes.POINTER(ul), ctypes.POINTER(ctypes.c_int),
+                                 ctypes.POINTER(ul), ctypes.POINTER(ul), ctypes.POINTER(vp)]
+x.XFree.argtypes = [vp]
+x.XGetGeometry.argtypes = [vp, ul, ctypes.POINTER(ul), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                           ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint),
+                           ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint)]
+x.XSelectInput.argtypes = [vp, ul, ctypes.c_long]
+x.XConnectionNumber.argtypes = [vp]
+x.XPending.argtypes = [vp]
+x.XNextEvent.argtypes = [vp, vp]
+PROPERTY_CHANGE_MASK = 1 << 22
+PROPERTY_NOTIFY = 28
+
+
+class SizeHints(ctypes.Structure):
+    _fields_ = [("flags", ctypes.c_long)] + [(name, ctypes.c_int) for name in (
+        "x", "y", "width", "height", "min_width", "min_height", "max_width", "max_height",
+        "width_inc", "height_inc", "min_aspect_x", "min_aspect_y", "max_aspect_x", "max_aspect_y",
+        "base_width", "base_height", "win_gravity")]
+
+
+x.XGetWMNormalHints.argtypes = [vp, ul, ctypes.POINTER(SizeHints), ctypes.POINTER(ctypes.c_long)]
+x.XSetWMNormalHints.argtypes = [vp, ul, ctypes.POINTER(SizeHints)]
+P_MIN_SIZE = 1 << 4
 
 
 class ClientMessage(ctypes.Structure):
@@ -40,8 +71,55 @@ class ClientMessage(ctypes.Structure):
                 ("data", ctypes.c_long * 5)]
 
 
+class PropertyEvent(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_int), ("serial", ul), ("send_event", ctypes.c_int),
+                ("display", vp), ("window", ul), ("atom", ul), ("time", ul), ("state", ctypes.c_int)]
+
+
 class Event(ctypes.Union):
-    _fields_ = [("client", ClientMessage), ("pad", ctypes.c_long * 24)]
+    _fields_ = [("client", ClientMessage), ("property", PropertyEvent), ("pad", ctypes.c_long * 24)]
+
+
+def atom_list(display, window, name):
+    """A 32-bit format window or atom list property; Xlib stores items as longs."""
+    kind, fmt, count, after, data = ul(), ctypes.c_int(), ul(), ul(), vp()
+    if x.XGetWindowProperty(display, window, x.XInternAtom(display, name, 0), 0, 1024, 0, 0,
+                            ctypes.byref(kind), ctypes.byref(fmt), ctypes.byref(count),
+                            ctypes.byref(after), ctypes.byref(data)) != 0 or not data:
+        return []
+    items = list(ctypes.cast(data, ctypes.POINTER(ul))[:count.value]) if fmt.value == 32 else []
+    x.XFree(data)
+    return items
+
+
+def screen_size(display, root):
+    width, height, ignored = ctypes.c_uint(), ctypes.c_uint(), ctypes.c_uint()
+    nothing, at = ul(), ctypes.c_int()
+    x.XGetGeometry(display, root, ctypes.byref(nothing), ctypes.byref(at), ctypes.byref(at),
+                   ctypes.byref(width), ctypes.byref(height), ctypes.byref(ignored), ctypes.byref(ignored))
+    return width.value, height.value
+
+
+def fit_minimum(display, root, window):
+    """Removes a minimum window size that is larger than the screen."""
+    hints, supplied = SizeHints(), ctypes.c_long()
+    if not x.XGetWMNormalHints(display, window, ctypes.byref(hints), ctypes.byref(supplied)) \
+            or not hints.flags & P_MIN_SIZE:
+        return
+    width, height = screen_size(display, root)
+    if hints.min_width > width or hints.min_height > height:
+        hints.flags &= ~P_MIN_SIZE
+        hints.min_width = hints.min_height = 0
+        x.XSetWMNormalHints(display, window, ctypes.byref(hints))
+
+
+def watch_windows(display, root, watched):
+    """Follows size hint changes of new top-level windows, and fits them at once."""
+    for window in atom_list(display, root, b"_NET_CLIENT_LIST"):
+        if window not in watched:
+            watched.add(window)
+            x.XSelectInput(display, window, PROPERTY_CHANGE_MASK)
+        fit_minimum(display, root, window)
 
 
 def settings(serial, dpi):
@@ -82,9 +160,37 @@ def main():
     x.XSendEvent(display, root, 0, 1 << 17, ctypes.byref(event))  # StructureNotifyMask
     x.XFlush(display)
 
+    client_list = x.XInternAtom(display, b"_NET_CLIENT_LIST", 0)
+    normal_hints = x.XInternAtom(display, b"WM_NORMAL_HINTS", 0)
+    x.XSelectInput(display, root, PROPERTY_CHANGE_MASK)
+    watched = set()
+    watch_windows(display, root, watched)
+    x.XFlush(display)
+
     # Opened for reading and writing, so that the pipe stays open between writers.
-    with open(os.open(pipe, os.O_RDWR), "r") as commands:
-        for line in commands:
+    commands = os.open(pipe, os.O_RDWR | os.O_NONBLOCK)
+    pending = b""
+    connection = x.XConnectionNumber(display)
+    event = Event()
+    while True:
+        while x.XPending(display):
+            x.XNextEvent(display, ctypes.byref(event))
+            if event.property.type != PROPERTY_NOTIFY:
+                continue
+            if event.property.window == root and event.property.atom == client_list:
+                watch_windows(display, root, watched)
+            elif event.property.atom == normal_hints:
+                fit_minimum(display, root, event.property.window)
+        x.XFlush(display)
+        ready, _, _ = select.select([connection, commands], [], [])
+        if commands not in ready:
+            continue
+        try:
+            pending += os.read(commands, 4096)
+        except BlockingIOError:
+            continue
+        *lines, pending = pending.split(b"\n")
+        for line in lines:
             try:
                 value = float(line)
             except ValueError:
