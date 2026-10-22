@@ -70,6 +70,12 @@ public final class RuntimeInstaller {
             try (InputStream input = context.getAssets().open(script)) {
                 LinuxRuntime.writeText(new File(root, "usr/local/lib/desktop-chrome/" + script), read(input));
             }
+        // Opens folders, files and links from Chrome in Chrome tabs; see the script.
+        File xdgOpen = new File(root, "usr/local/bin/xdg-open");
+        try (InputStream input = context.getAssets().open("xdg-open")) {
+            LinuxRuntime.writeText(xdgOpen, read(input));
+        }
+        android.system.Os.chmod(xdgOpen.getAbsolutePath(), 0755);
         installKeyboardExtension(context, root);
         LinuxRuntime.configureDns(context);
         JSONObject chrome = manifest.getJSONObject("chrome");

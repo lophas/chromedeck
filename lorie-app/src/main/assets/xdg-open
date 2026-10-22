@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
+# ChromeDeck's xdg-open: there is no file manager or other desktop app, so folders and
+# files that Chrome opens ("Show in folder", opening a download) and web links open in
+# a new Chrome tab, folders as file:// listings. Anything else goes to Debian's xdg-open.
+target=${1:-}
+case "$target" in
+    http://*|https://*|file://*) url=$target ;;
+    *)
+        # A path, also a relative one such as ".".
+        [ -e "$target" ] || exec /usr/bin/xdg-open "$@"
+        url=$(python3 -c 'import os, sys, urllib.parse
+print("file://" + urllib.parse.quote(os.path.abspath(sys.argv[1])))' "$target") ;;
+esac
+# A running Chrome with the same profile opens the URL in a new tab and this exits.
+exec /opt/google/chrome/chrome --no-sandbox --test-type \
+    --user-data-dir=/root/.config/desktop-chrome-android "$url"

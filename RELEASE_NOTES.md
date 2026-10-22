@@ -1,6 +1,20 @@
-# ChromeDeck 0.5.2 — Preview
+# ChromeDeck 0.5.3 — Preview
 
-## New in 0.5.2
+## New in 0.5.3
+
+- **Downloads open in Chrome:** **Show in folder** in Chrome's downloads opens the
+  folder as a file listing in a new tab, and opening a downloaded file shows it in a
+  new tab (PDFs, images, text). Links that Chrome hands to the system open in a new
+  tab too.
+
+Known: in Chrome's file chooser a double tap on a file closes the dialog without
+attaching it; select the file and tap **Open**.
+
+Install over 0.5.x without uninstalling; the browser profile is kept.
+
+## 0.5.2
+
+### New in 0.5.2
 
 - **Keyboard for text fields:** tapping a text field on a web page opens Android's
   on-screen keyboard, and leaving it closes the keyboard, unless a hardware

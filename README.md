@@ -30,6 +30,8 @@ through an embedded X11 display; it is not a remote browser or an Android WebVie
   app's settings, and Chrome stops drawing pages while it cannot be seen.
 - **Audio playback** through Android's media output.
 - **Phone storage in Chrome** at `/root/Phone`, for files and unpacked extensions.
+- **Downloads open in Chrome:** **Show in folder** lists the folder in a new tab, and
+  opening a downloaded file shows it in a new tab (PDFs, images, text).
 - **Persistent profile:** settings, sign-ins and extensions survive restarts and
   app updates, and the last session's tabs reopen when the app starts again.
 - **Touch and keyboard controls:** touch, mouse, touchpad and hardware keyboard
@@ -240,6 +242,12 @@ Samsung DeX and similar) or cannot show Chrome there. The mouse can only control
 Chrome on the monitor while ChromeDeck is in front on the phone. In desktop mode Android opens the recent-apps switcher on the monitor,
 so swiping up and holding on the phone does not show it there while a monitor
 is connected, with or without ChromeDeck.
+
+### File chooser: double tap does not attach
+
+In Chrome's file chooser (for example when attaching a file to a web page), a double
+tap on a file closes the dialog without attaching the file. Select the file and tap
+**Open** instead.
 
 ### Audio
 
