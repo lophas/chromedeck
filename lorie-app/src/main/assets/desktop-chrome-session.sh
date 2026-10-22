@@ -20,22 +20,14 @@ fi
 openbox --sm-disable --config-file "$openbox_config" &
 wm_pid=$!
 # ChromeDeck writes "hidden" or "visible" to this pipe when it leaves or returns to the
-# screen. Minimized Chrome stops drawing pages and slows down timers, as Chrome on a
-# phone does in the background; audio keeps playing.
+# screen, and session-x11.py minimizes or restores Chrome's windows.
 visibility_pipe=/tmp/desktop-chrome-visibility
 rm -f "$visibility_pipe"
 mkfifo -m 600 "$visibility_pipe"
-while :; do
-    while read -r state; do
-        python3 /usr/local/lib/desktop-chrome/window-visibility.py "$state" \
-            || echo "Cannot change Chrome's window visibility" >&2
-    done < "$visibility_pipe"
-done &
-visibility_pid=$!
 chrome_pid=
 # The Android service reads this PID to stop Chrome gracefully.
 pid_file=/tmp/desktop-chrome-browser.pid
-trap 'audio_stop; kill "$wm_pid" "$visibility_pid" "${scale_pid:-}" 2>/dev/null || true; rm -f "$pid_file" "$visibility_pipe" "${scale_pipe:-}"' EXIT
+trap 'audio_stop; kill "$wm_pid" "${helper_pid:-}" 2>/dev/null || true; rm -f "$pid_file" "$visibility_pipe" "${scale_pipe:-}"' EXIT
 # Let Chrome save its session before the session ends.
 trap 'if [ -n "$chrome_pid" ]; then kill -TERM "$chrome_pid" 2>/dev/null; wait "$chrome_pid"; fi; exit 143' HUP INT TERM
 . /usr/local/lib/desktop-chrome-audio/session.sh
@@ -79,8 +71,8 @@ case "${DESKTOP_CHROME_SCALE:-auto}" in
     auto) initial_scale=1 ;;
     *) initial_scale=$DESKTOP_CHROME_SCALE ;;
 esac
-python3 /usr/local/lib/desktop-chrome/display-scale.py "$scale_pipe" "$initial_scale" &
-scale_pid=$!
+python3 /usr/local/lib/desktop-chrome/session-x11.py "$initial_scale" "$scale_pipe" "$visibility_pipe" &
+helper_pid=$!
 /opt/google/chrome/chrome \
     --no-sandbox \
     --test-type \

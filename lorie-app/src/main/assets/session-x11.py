@@ -1,18 +1,25 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Gives Chrome its display scale through XSETTINGS, and changes it while Chrome runs.
+"""ChromeDeck's helper on the X display: Chrome's display scale and its visibility.
 
-usage: display-scale.py PIPE SCALE
+usage: session-x11.py SCALE SCALE_PIPE VISIBILITY_PIPE
 
-Chrome on Linux takes its scale from the desktop's Xft/DPI setting and follows changes
-of it, so moving between the phone and a monitor needs no restart. This process owns
-the XSETTINGS selection, as a desktop's settings daemon would, and sets Xft/DPI to
-SCALE × 96; each line written to PIPE, such as "1.25", sets a new scale.
+Display scale: Chrome on Linux takes its scale from the desktop's Xft/DPI setting and
+follows changes of it, so moving between the phone and a monitor needs no restart. This
+process owns the XSETTINGS selection, as a desktop's settings daemon would, and sets
+Xft/DPI to SCALE × 96; each line written to SCALE_PIPE, such as "1.25", sets a new scale.
 
 Chrome also sets a minimum window size, from its toolbar, in its own units; at a large
 scale on the narrow phone screen that is wider than the screen, and the window manager
 would then keep a maximized window wider than the screen. Chrome fits a narrower window
 well, so a minimum larger than the screen is removed whenever Chrome sets it.
-Uses libX11, which Chrome already needs.
+
+Visibility: ChromeDeck writes "hidden" or "visible" to VISIBILITY_PIPE when it leaves or
+returns to the screen. Minimized Chrome stops drawing pages and slows down timers, as
+Chrome on a phone does in the background; audio keeps playing. "visible" restores every
+minimized window, so a restore never depends on an earlier "hidden".
+
+Both pipes stay open in this one long-running process, so no message is lost between
+writers. Uses libX11, which Chrome already needs.
 """
 import ctypes
 import os
@@ -49,6 +56,9 @@ x.XSelectInput.argtypes = [vp, ul, ctypes.c_long]
 x.XConnectionNumber.argtypes = [vp]
 x.XPending.argtypes = [vp]
 x.XNextEvent.argtypes = [vp, vp]
+x.XIconifyWindow.argtypes = [vp, ul, ctypes.c_int]
+x.XDefaultScreen.argtypes = [vp]
+x.XMapWindow.argtypes = [vp, ul]
 PROPERTY_CHANGE_MASK = 1 << 22
 PROPERTY_NOTIFY = 28
 
@@ -122,6 +132,30 @@ def watch_windows(display, root, watched):
         fit_minimum(display, root, window)
 
 
+def set_visible(display, root, visible):
+    """Minimizes Chrome's windows, or restores every minimized one."""
+    hidden = x.XInternAtom(display, b"_NET_WM_STATE_HIDDEN", 0)
+    # Bottom to top, so restoring keeps the window order.
+    for window in atom_list(display, root, b"_NET_CLIENT_LIST_STACKING"):
+        minimized = hidden in atom_list(display, window, b"_NET_WM_STATE")
+        if visible and minimized:
+            # The window manager restores and activates a minimized window that is mapped.
+            x.XMapWindow(display, window)
+        elif not visible and not minimized:
+            x.XIconifyWindow(display, window, x.XDefaultScreen(display))
+    x.XFlush(display)
+
+
+def lines(fd, pending):
+    """Complete lines read from a pipe, and the incomplete rest."""
+    try:
+        pending += os.read(fd, 4096)
+    except BlockingIOError:
+        pass
+    *complete, rest = pending.split(b"\n")
+    return [line.strip() for line in complete], rest
+
+
 def settings(serial, dpi):
     """The _XSETTINGS_SETTINGS property: one integer setting, Xft/DPI in 1/1024 dpi."""
     name = b"Xft/DPI"
@@ -131,7 +165,7 @@ def settings(serial, dpi):
 
 
 def main():
-    pipe, scale = sys.argv[1], float(sys.argv[2])
+    scale, scale_pipe, visibility_pipe = float(sys.argv[1]), sys.argv[2], sys.argv[3]
     display = x.XOpenDisplay(None)
     if not display:
         sys.exit("Cannot open the X display")
@@ -167,9 +201,10 @@ def main():
     watch_windows(display, root, watched)
     x.XFlush(display)
 
-    # Opened for reading and writing, so that the pipe stays open between writers.
-    commands = os.open(pipe, os.O_RDWR | os.O_NONBLOCK)
-    pending = b""
+    # Opened for reading and writing, so that the pipes stay open between writers.
+    scales = os.open(scale_pipe, os.O_RDWR | os.O_NONBLOCK)
+    visibility = os.open(visibility_pipe, os.O_RDWR | os.O_NONBLOCK)
+    pending_scale = pending_visibility = b""
     connection = x.XConnectionNumber(display)
     event = Event()
     while True:
@@ -182,22 +217,23 @@ def main():
             elif event.property.atom == normal_hints:
                 fit_minimum(display, root, event.property.window)
         x.XFlush(display)
-        ready, _, _ = select.select([connection, commands], [], [])
-        if commands not in ready:
-            continue
+        ready, _, _ = select.select([connection, scales, visibility], [], [])
+        # A bad message or a vanished window must not end the helper.
         try:
-            pending += os.read(commands, 4096)
-        except BlockingIOError:
-            continue
-        *lines, pending = pending.split(b"\n")
-        for line in lines:
-            try:
-                value = float(line)
-            except ValueError:
-                continue
-            if 0.5 <= value <= 8:
-                serial += 1
-                publish(value)
+            if visibility in ready:
+                received, pending_visibility = lines(visibility, pending_visibility)
+                for line in received:
+                    if line in (b"hidden", b"visible"):
+                        set_visible(display, root, line == b"visible")
+            if scales in ready:
+                received, pending_scale = lines(scales, pending_scale)
+                for line in received:
+                    value = float(line)
+                    if 0.5 <= value <= 8:
+                        serial += 1
+                        publish(value)
+        except Exception as error:
+            print("ChromeDeck X11 helper:", error, file=sys.stderr)
 
 
 main()

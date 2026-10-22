@@ -66,7 +66,7 @@ public final class RuntimeInstaller {
             LinuxRuntime.writeText(launcher, read(input));
         }
         android.system.Os.chmod(launcher.getAbsolutePath(), 0755);
-        for (String script : new String[] { "window-visibility.py", "display-scale.py" })
+        for (String script : new String[] { "session-x11.py" })
             try (InputStream input = context.getAssets().open(script)) {
                 LinuxRuntime.writeText(new File(root, "usr/local/lib/desktop-chrome/" + script), read(input));
             }

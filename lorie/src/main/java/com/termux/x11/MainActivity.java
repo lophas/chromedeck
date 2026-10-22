@@ -482,7 +482,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setBrowserVisible(boolean visible) {
-        if (Boolean.valueOf(visible).equals(browserVisible))
+        // "visible" is sent each time, so that a lost message cannot leave Chrome minimized.
+        if (!visible && Boolean.FALSE.equals(browserVisible))
             return;
         browserVisible = visible;
         if (browserVisibilityListener != null)
