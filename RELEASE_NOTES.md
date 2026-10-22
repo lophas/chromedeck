@@ -11,7 +11,6 @@
   it. **Preferences → Browser → Show keyboard for text fields** turns it off and
   removes the extension at the next start; removing or disabling the extension in
   Chrome is kept, and turning the setting back on reinstalls it.
-
 - **Grouped browser settings:** **Preferences → Browser** is grouped into
   Display, Monitor, Input, Chrome updates and System.
 
