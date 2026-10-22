@@ -54,6 +54,8 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
             if ("started".equals(state)) {
                 starting = false;
                 dismissProgress();
+                // Updates are checked and downloaded while Chrome runs, not before it starts.
+                ChromeUpdater.check(DesktopChromeApp.this, false);
             } else if ("exited".equals(state)) {
                 starting = false;
                 dismissProgress();
@@ -294,6 +296,28 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
             clipboard.setPrimaryClip(ClipData.newPlainText("ChromeDeck", details));
             Toast.makeText(this, "Details copied", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    /**
+     * Restarts the browser, for example to install a downloaded Chrome update: closes the
+     * windows, waits for the session to end, and opens ChromeDeck again.
+     */
+    public void restartBrowser() {
+        for (MainActivity window : MainActivity.getInstances())
+            window.finish();
+        File pid = new File(LinuxRuntime.tmp(this), "desktop-chrome-browser.pid");
+        long deadline = SystemClock.elapsedRealtime() + 20000;
+        Runnable reopen = new Runnable() {
+            @Override public void run() {
+                if ((pid.exists() || bound) && SystemClock.elapsedRealtime() < deadline) {
+                    main.postDelayed(this, 500);
+                    return;
+                }
+                startActivity(new Intent(DesktopChromeApp.this, LauncherActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        };
+        main.postDelayed(reopen, 1000);
     }
 
     private void releaseServer() {

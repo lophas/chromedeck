@@ -434,12 +434,33 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             setAutomaticScale("chromeScaleExternal", monitor != null ? AutoScale.percent(AutoScale.monitor(monitor))
                     : getString(R.string.lorie_pref_chromeScale_fromResolution));
 
-            SwitchPreferenceCompat update = findPreference("chromeAutoUpdate");
-            if (update != null) {
-                update.setChecked(!runtimeFile(CHROME_UPDATE_OPT_OUT).exists());
-                String version = readText(runtimeFile("chrome-version"));
-                String summary = getString(R.string.lorie_pref_chromeAutoUpdate_summary);
-                update.setSummary(version.isEmpty() ? summary : summary + "\nInstalled: " + version);
+            // Updates turned off with the earlier on/off switch stay off.
+            android.content.SharedPreferences shared = getPreferenceManager().getSharedPreferences();
+            ListPreference updateMode = findPreference("chromeUpdateMode");
+            if (updateMode != null && shared != null && !shared.contains("chromeUpdateMode")
+                    && runtimeFile(CHROME_UPDATE_OPT_OUT).exists())
+                updateMode.setValue("off");
+
+            // The check runs in the app, outside this settings screen; its result arrives
+            // as a notification or a message.
+            Preference check = findPreference("chromeUpdateCheck");
+            if (check != null) {
+                StringBuilder summary = new StringBuilder();
+                String installed = readText(runtimeFile("chrome-version"));
+                String latest = readText(runtimeFile("chrome-update-available"));
+                String ready = readText(runtimeFile("chrome-update-ready"));
+                if (!installed.isEmpty())
+                    summary.append(getString(R.string.lorie_pref_chromeUpdate_installed, installed));
+                if (!latest.isEmpty())
+                    summary.append('\n').append(getString(R.string.lorie_pref_chromeUpdate_latest, latest));
+                if (!ready.isEmpty())
+                    summary.append('\n').append(getString(R.string.lorie_pref_chromeUpdate_ready, ready));
+                check.setSummary(summary.toString().trim());
+                check.setOnPreferenceClickListener(p -> {
+                    requireContext().sendBroadcast(new Intent().setClassName(requireContext(),
+                            "com.termux.x11.ChromeUpdater$Receiver").putExtra("what", "check"));
+                    return true;
+                });
             }
         }
 
@@ -604,12 +625,9 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             if ("frameRateLimit".contentEquals(key))
                 Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
 
-            if ("prootAcceleration".contentEquals(key) || "chromeAutoUpdate".contentEquals(key)) {
-                boolean enabled = (Boolean) newValue;
-                boolean saved = "prootAcceleration".contentEquals(key)
-                        ? setRuntimeOptOut(PROOT_OPT_OUT, !enabled, "Disabled in Preferences")
-                        : setRuntimeOptOut(CHROME_UPDATE_OPT_OUT, !enabled, "Disabled in Preferences");
-                if (saved && "prootAcceleration".contentEquals(key))
+            if ("prootAcceleration".contentEquals(key)) {
+                boolean saved = setRuntimeOptOut(PROOT_OPT_OUT, !(Boolean) newValue, "Disabled in Preferences");
+                if (saved)
                     Toast.makeText(getActivity(), R.string.lorie_pref_restartToApply, Toast.LENGTH_SHORT).show();
                 return saved;
             }

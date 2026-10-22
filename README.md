@@ -112,10 +112,17 @@ adb install -r chromedeck.apk
     browsing much faster. If Chrome fails to start with it, the app turns it off
     and says so here. Turn it off if Chrome crashes or misbehaves. Changes apply
     after restarting the app. Details: [video and GPU notes](docs/GPU-VIDEO.md).
-  - **Update Chrome automatically** — on by default. Linux Chrome has no built-in
-    updater, so before Chrome starts, at most about once a day, the app installs a
-    newer `google-chrome-stable` from Google's repository. A failed check never
-    blocks startup. The installed version is shown below the switch.
+  - **Chrome updates** — Linux Chrome has no built-in updater, so the app checks
+    Google's repository while Chrome runs and downloads a newer
+    `google-chrome-stable` in the background. It is installed before Chrome next
+    starts, which takes a few seconds; a failed update never blocks startup.
+    **Install automatically** (default) notifies when an update is ready, with
+    **Restart now** (Chrome reopens its tabs); **Ask before installing** offers
+    **Update**, **Later** or **Skip this version** first; **Off** stops checking.
+    **Check for Chrome updates** sets daily (default) or weekly checks,
+    **Chrome updates only on Wi-Fi** (on by default) keeps scheduled checks and
+    downloads off metered networks, and **Check for Chrome updates now** shows the
+    installed and the latest version and checks at once.
   - **Frame rate** — 30 fps by default to save battery. Chrome renders in
     software, and 30 fps uses 20–40% less CPU than the display's maximum.
     Choose 60 fps or **Display maximum** for smoother scrolling and animation.

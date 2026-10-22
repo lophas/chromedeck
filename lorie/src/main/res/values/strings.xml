@@ -40,8 +40,14 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_prootAcceleration">Fast system calls (PRoot acceleration)</string>
     <string name="lorie_pref_prootAcceleration_summary">Smoother video and faster browsing. Turn off if Chrome crashes or misbehaves. Applies after restarting the app.</string>
     <string name="lorie_pref_prootAcceleration_autoDisabled">Turned off automatically after Chrome failed to start with it. Turn on to try again; applies after restarting the app.</string>
-    <string name="lorie_pref_chromeAutoUpdate">Update Chrome automatically</string>
-    <string name="lorie_pref_chromeAutoUpdate_summary">Installs updates from Google\'s repository before Chrome starts, at most once a day.</string>
+    <string name="lorie_pref_chromeUpdateMode">Chrome updates</string>
+    <string name="lorie_pref_chromeUpdateInterval">Check for Chrome updates</string>
+    <string name="lorie_pref_chromeUpdateWifiOnly">Chrome updates only on Wi-Fi</string>
+    <string name="lorie_pref_chromeUpdateWifiOnly_summary">Scheduled checks and downloads (about 120 MB) wait for an unmetered network.</string>
+    <string name="lorie_pref_chromeUpdateCheck">Check for Chrome updates now</string>
+    <string name="lorie_pref_chromeUpdate_installed">Installed: %s</string>
+    <string name="lorie_pref_chromeUpdate_latest">Latest: %s</string>
+    <string name="lorie_pref_chromeUpdate_ready">Downloaded, installs on the next start: %s</string>
     <string name="lorie_pref_externalDisplay">Show Chrome on a connected monitor</string>
     <string name="lorie_pref_externalDisplay_summary">Chrome fills the monitor and the phone screen works as a touchpad. Otherwise the monitor shows what Android shows there, such as the mirrored phone screen. The app\'s notification switches at any time.</string>
     <string name="lorie_external_display_title">Monitor connected</string>
@@ -182,4 +188,16 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_screenIdleTimeoutSystem">System (%s)</string>
     <string name="lorie_pref_hideAdditionalKbdWithExternalKeyboard">Hide extra key bar with external keyboard</string>
     <string name="lorie_pref_hideAdditionalKbdWithExternalKeyboard_summary">Automatically hide the bar with a hardware keyboard. Three-finger swipe down reveals it over the desktop without resizing it.</string>
+    <string name="chrome_update_channel">Chrome updates</string>
+    <string name="chrome_update_checking">Checking for Chrome updates…</string>
+    <string name="chrome_update_none">Chrome is up to date.</string>
+    <string name="chrome_update_failed">Chrome update failed; see the session log.</string>
+    <string name="chrome_update_available_title">Chrome %s is available</string>
+    <string name="chrome_update_available_text">Update downloads it now and installs it when ChromeDeck next starts.</string>
+    <string name="chrome_update_ready_title">Chrome %s is ready</string>
+    <string name="chrome_update_ready_text">Restart now installs it; Chrome reopens its tabs. Otherwise it installs when ChromeDeck next starts.</string>
+    <string name="chrome_update_update">Update</string>
+    <string name="chrome_update_later">Later</string>
+    <string name="chrome_update_skip">Skip this version</string>
+    <string name="chrome_update_restart">Restart now</string>
 </resources>

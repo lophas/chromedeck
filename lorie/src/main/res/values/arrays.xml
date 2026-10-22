@@ -98,6 +98,24 @@
         <item>2.75</item>
         <item>3</item>
     </string-array>
+    <string-array name="chromeUpdateModeEntries">
+        <item>Install automatically</item>
+        <item>Ask before installing</item>
+        <item>Off</item>
+    </string-array>
+    <string-array name="chromeUpdateModeValues">
+        <item>auto</item>
+        <item>ask</item>
+        <item>off</item>
+    </string-array>
+    <string-array name="chromeUpdateIntervalEntries">
+        <item>Daily</item>
+        <item>Weekly</item>
+    </string-array>
+    <string-array name="chromeUpdateIntervalValues">
+        <item>daily</item>
+        <item>weekly</item>
+    </string-array>
     <string-array name="externalDisplayEntries">
         <item>Ask when a monitor connects</item>
         <item>Always</item>

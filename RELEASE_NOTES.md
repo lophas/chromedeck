@@ -1,6 +1,22 @@
-# ChromeDeck 0.5.0 — Preview
+# ChromeDeck 0.5.1 — Preview
 
-## New in 0.5.0
+## New in 0.5.1
+
+- **Chrome update settings:** **Preferences → Browser → Chrome updates** offers
+  **Install automatically** (default), **Ask before installing** and **Off**,
+  daily or weekly checks, and **Only on Wi-Fi** (on by default). Updates are
+  checked and downloaded in the background while Chrome runs, so startup no longer
+  waits for them; a downloaded update installs before Chrome next starts. A
+  notification offers **Restart now**, or in ask mode **Update**, **Later** and
+  **Skip this version**. **Check for Chrome updates now** shows the installed and
+  the latest version.
+
+Install over 0.5.0 without uninstalling; the browser profile is kept. Updates
+turned off with the earlier switch stay off.
+
+## 0.5.0
+
+### New in 0.5.0
 
 - **Automatic display scale:** **Automatic** in **Preferences → Browser → Display
   scale** now picks a scale for the display: from Android's display density on the

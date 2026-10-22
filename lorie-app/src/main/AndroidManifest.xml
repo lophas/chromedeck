@@ -20,6 +20,7 @@
             android:exported="false" tools:replace="android:exported" />
         <receiver android:name="com.termux.x11.LorieApp$Receiver"
             android:exported="false" tools:replace="android:exported" />
+        <receiver android:name="com.termux.x11.ChromeUpdater$Receiver" android:exported="false" />
         <activity
             android:name="com.termux.x11.LauncherActivity"
             android:icon="@mipmap/lorie_ic_launcher"

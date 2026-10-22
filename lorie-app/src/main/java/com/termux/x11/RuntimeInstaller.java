@@ -109,7 +109,6 @@ public final class RuntimeInstaller {
     /** Installed Chrome version reported by the binary, shown in Preferences. */
     public static File chromeVersion(Context context) { return new File(context.getFilesDir(), "runtime/chrome-version"); }
     public static File chromeUpdateOptOut(Context context) { return new File(context.getFilesDir(), "runtime/disable-chrome-update"); }
-    private static final long CHROME_UPDATE_INTERVAL_MS = 20L * 60 * 60 * 1000;
 
     /** Keeps only the "Google Chrome x.y" line; Chrome also logs warnings to the same output. */
     private static void writeChromeVersion(Context context, String output) throws IOException {
@@ -134,41 +133,19 @@ public final class RuntimeInstaller {
     }
 
     /**
-     * Linux Chrome has no self-updater; Google publishes updates only through its
-     * signed APT repository. Upgrade from it at most about once a day, before Chrome
-     * starts. Failures are logged and never prevent the installed Chrome from starting.
+     * Before Chrome starts: installs an update that ChromeUpdater downloaded while Chrome
+     * last ran. Failures are logged and never prevent the installed Chrome from starting.
      */
     private static void updateChrome(Context context, Progress progress) {
-        if (!chromeVersion(context).isFile()) {
+        boolean updated = ChromeUpdater.ready(context).isFile();
+        ChromeUpdater.installReady(context, progress);
+        if (updated || !chromeVersion(context).isFile()) {
             try {
                 String version = LinuxRuntime.runChecked(context, 60, "/opt/google/chrome/chrome", "--version");
                 writeChromeVersion(context, version);
             } catch (Exception error) {
                 android.util.Log.w("DesktopChrome", "Cannot read the installed Chrome version.", error);
             }
-        }
-        if (chromeUpdateOptOut(context).exists())
-            return;
-        File stamp = new File(context.getFilesDir(), "runtime/chrome-update-check");
-        if (System.currentTimeMillis() - stamp.lastModified() < CHROME_UPDATE_INTERVAL_MS)
-            return;
-        progress.update("Checking for Google Chrome updates", -1);
-        try {
-            LinuxRuntime.writeText(stamp, "");
-            // Refresh only Google's repository list; keep the other package lists.
-            LinuxRuntime.runChecked(context, 120, "/usr/bin/env", "DEBIAN_FRONTEND=noninteractive",
-                    "/usr/bin/apt-get", "-o", "APT::Sandbox::User=root",
-                    "-o", "Dir::Etc::SourceList=/etc/apt/sources.list.d/google-chrome.sources",
-                    "-o", "Dir::Etc::SourceParts=/nonexistent",
-                    "-o", "APT::Get::List-Cleanup=0", "update");
-            progress.update("Updating Google Chrome", -1);
-            LinuxRuntime.runChecked(context, 900, "/usr/bin/env", "DEBIAN_FRONTEND=noninteractive",
-                    "/usr/bin/apt-get", "-o", "APT::Sandbox::User=root", "install", "--yes",
-                    "--only-upgrade", "--no-install-recommends", "google-chrome-stable");
-            String version = LinuxRuntime.runChecked(context, 60, "/opt/google/chrome/chrome", "--version");
-            writeChromeVersion(context, version);
-        } catch (Exception error) {
-            android.util.Log.w("DesktopChrome", "Chrome update failed; starting the installed version.", error);
         }
     }
 
