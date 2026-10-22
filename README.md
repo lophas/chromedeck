@@ -147,8 +147,8 @@ adb install -r chromedeck.apk
   HiDPI display, from 100% to 400%. **Automatic** (the default) follows Android's
   display density on the phone, a little smaller for Chrome's desktop interface (250%
   on a 480 dpi phone), and the resolution on a monitor (125% at 1080p, 150% at
-  1440p, 200% at 2160p). Chrome uses the scale of the display it starts on; with a
-  monitor connected it starts after the monitor question, so the answer decides.
+  1440p, 200% at 2160p). Chrome follows at once when it moves between the phone and
+  a monitor, and when the setting changes.
 - **Tabs after a restart:** each profile starts set to Chrome's **On startup →
   Continue where you left off**, so the last session reopens without a crash
   prompt. You can change this in Chrome's settings.

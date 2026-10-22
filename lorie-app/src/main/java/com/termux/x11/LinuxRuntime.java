@@ -185,12 +185,21 @@ public final class LinuxRuntime {
 
     /**
      * Tells the browser session whether ChromeDeck can be seen, through a pipe that the
-     * session script reads; Chrome is minimized while it cannot. Nothing happens when no
-     * session is running.
+     * session script reads; Chrome is minimized while it cannot.
      */
     public static void writeBrowserVisibility(Context context, boolean visible) {
-        File pipe = new File(tmp(context), "desktop-chrome-visibility");
-        byte[] line = (visible ? "visible\n" : "hidden\n").getBytes(StandardCharsets.UTF_8);
+        writePipe(context, "desktop-chrome-visibility", visible ? "visible" : "hidden");
+    }
+
+    /** Sets Chrome's display scale while it runs, through the session's settings pipe. */
+    public static void writeBrowserScale(Context context, float scale) {
+        writePipe(context, "desktop-chrome-scale", String.valueOf(scale));
+    }
+
+    /** Writes a line to a pipe of the browser session; nothing happens when none runs. */
+    private static void writePipe(Context context, String name, String text) {
+        File pipe = new File(tmp(context), name);
+        byte[] line = (text + "\n").getBytes(StandardCharsets.UTF_8);
         try {
             FileDescriptor fd = Os.open(pipe.getPath(), OsConstants.O_WRONLY | OsConstants.O_NONBLOCK, 0);
             try {

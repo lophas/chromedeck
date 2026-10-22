@@ -76,6 +76,9 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         super.onCreate();
         registerActivityLifecycleCallbacks(this);
         MainActivity.browserVisibilityListener = visible -> LinuxRuntime.writeBrowserVisibility(this, visible);
+        MainActivity.displayScaleListener = onMonitor -> LinuxRuntime.writeBrowserScale(this, displayScale(onMonitor));
+        getSharedPreferences(getPackageName() + "_preferences", MODE_PRIVATE)
+                .registerOnSharedPreferenceChangeListener(scaleSettingListener);
         IntentFilter filter = new IntentFilter(EmbeddedX11Service.ACTION_STATE);
         if (Build.VERSION.SDK_INT >= 33)
             registerReceiver(sessionState, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -119,6 +122,25 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
         } catch (IOException error) {
             Log.w(TAG, "Cannot record the window's display", error);
         }
+    }
+
+    /** A changed display scale setting applies at once to the display Chrome is on. */
+    private final SharedPreferences.OnSharedPreferenceChangeListener scaleSettingListener = (preferences, key) -> {
+        MainActivity window = MainActivity.getFocusedOrAnyInstance();
+        if (window != null && ("chromeScale".equals(key) || "chromeScaleExternal".equals(key)))
+            LinuxRuntime.writeBrowserScale(this, displayScale(window.isOutputOnExternalDisplay()));
+    };
+
+    /** The scale for the phone or the monitor, as set in Preferences → Browser → Display scale. */
+    private float displayScale(boolean onMonitor) {
+        String scale = getSharedPreferences(getPackageName() + "_preferences", MODE_PRIVATE).getString(onMonitor ? "chromeScaleExternal" : "chromeScale", "auto");
+        if (!"auto".equals(scale))
+            try {
+                return Float.parseFloat(scale);
+            } catch (NumberFormatException ignored) {
+            }
+        android.view.Display monitor = AutoScale.monitorDisplay(this);
+        return onMonitor ? (monitor == null ? 1f : AutoScale.monitor(monitor)) : AutoScale.phone(this);
     }
 
     private float monitorScale(Activity activity) {

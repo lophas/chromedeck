@@ -438,6 +438,8 @@ public class MainActivity extends AppCompatActivity {
 
     /** Set by the app to minimize Chrome while nobody can see it. */
     public static Consumer<Boolean> browserVisibilityListener;
+    /** Set by the app to change Chrome's display scale when it moves to or from the monitor. */
+    public static Consumer<Boolean> displayScaleListener;
     private boolean started;
     private Boolean browserVisible;
     private final Runnable hideBrowser = () -> setBrowserVisible(false);
@@ -1585,6 +1587,8 @@ public class MainActivity extends AppCompatActivity {
             applyScreenIdleTimeout();
             setCapturingEnabled(true);
             updateBrowserVisibility();
+            if (displayScaleListener != null)
+                displayScaleListener.accept(true);
         } else if (!wanted && presentation != null) {
             presentation.dismiss();
         }
@@ -1618,6 +1622,8 @@ public class MainActivity extends AppCompatActivity {
         app.refreshNotificationIfShown();
         updateBrowserVisibility();
         updateToolbar();
+        if (displayScaleListener != null)
+            displayScaleListener.accept(false);
     }
 
     private FloatingToolbar toolbar;

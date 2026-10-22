@@ -7,8 +7,11 @@
   phone (250% on a 480 dpi phone), from the resolution on a monitor (125% at 1080p,
   150% at 1440p, 200% at 2160p). New steps up to 400%; the
   settings show the scale that Automatic picks.
-- With a monitor connected, Chrome starts after the monitor question, so it uses
-  the scale of the display you choose.
+- **Display scale follows the display:** Chrome rescales at once, without a
+  restart, when it moves between the phone and a monitor and when the scale
+  setting changes. ChromeDeck now gives Chrome its scale as the desktop's Xft/DPI
+  setting instead of a launch option. With a monitor connected, Chrome starts
+  after the monitor question.
 - **Toolbar on the phone too:** the touchpad's toolbar is now also on the phone
   screen over Chrome: **Settings**, **Keyboard**, **Monitor** when a monitor is
   connected, and **Exit**. Drag it by its handle (touch, or a mouse that Chrome has

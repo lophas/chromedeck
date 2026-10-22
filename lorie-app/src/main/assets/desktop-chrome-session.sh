@@ -35,7 +35,7 @@ visibility_pid=$!
 chrome_pid=
 # The Android service reads this PID to stop Chrome gracefully.
 pid_file=/tmp/desktop-chrome-browser.pid
-trap 'audio_stop; kill "$wm_pid" "$visibility_pid" 2>/dev/null || true; rm -f "$pid_file" "$visibility_pipe"' EXIT
+trap 'audio_stop; kill "$wm_pid" "$visibility_pid" "${scale_pid:-}" 2>/dev/null || true; rm -f "$pid_file" "$visibility_pipe" "${scale_pipe:-}"' EXIT
 # Let Chrome save its session before the session ends.
 trap 'if [ -n "$chrome_pid" ]; then kill -TERM "$chrome_pid" 2>/dev/null; wait "$chrome_pid"; fi; exit 143' HUP INT TERM
 . /usr/local/lib/desktop-chrome-audio/session.sh
@@ -70,11 +70,17 @@ PY
 # PRoot provides no Linux browser sandbox, so --no-sandbox is required; Android's
 # app sandbox still applies. --test-type hides the resulting warning bar.
 # Preferences → Browser → Display scale renders Chrome's interface and pages larger
-# at full resolution, like a HiDPI display.
+# at full resolution, like a HiDPI display. Chrome takes it from the Xft/DPI desktop
+# setting, which follows when ChromeDeck moves between the phone and a monitor.
+scale_pipe=/tmp/desktop-chrome-scale
+rm -f "$scale_pipe"
+mkfifo -m 600 "$scale_pipe"
 case "${DESKTOP_CHROME_SCALE:-auto}" in
-    auto) ;;
-    *) set -- --force-device-scale-factor="$DESKTOP_CHROME_SCALE" "$@" ;;
+    auto) initial_scale=1 ;;
+    *) initial_scale=$DESKTOP_CHROME_SCALE ;;
 esac
+python3 /usr/local/lib/desktop-chrome/display-scale.py "$scale_pipe" "$initial_scale" &
+scale_pid=$!
 /opt/google/chrome/chrome \
     --no-sandbox \
     --test-type \
