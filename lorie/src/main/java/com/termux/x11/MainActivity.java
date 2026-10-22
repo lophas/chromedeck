@@ -1466,11 +1466,14 @@ public class MainActivity extends AppCompatActivity {
         return "always".equals(prefs.externalDisplay.get());
     }
 
-    /** Chrome will probably be shown on the monitor: it is, or the user has not answered yet. */
-    public static boolean presentationLikely(Context ctx, Prefs prefs) {
-        return presentationWanted(ctx, prefs) || externalDisplayId(ctx) != Display.INVALID_DISPLAY
-                && presentationChoice == null && "ask".equals(prefs.externalDisplay.get());
+    /** A monitor is connected and the user has not yet been asked about it. */
+    public static boolean presentationUndecided(Context ctx, Prefs prefs) {
+        return externalDisplayId(ctx) != Display.INVALID_DISPLAY && presentationChoice == null
+                && "ask".equals(prefs.externalDisplay.get());
     }
+
+    /** Set by the app to start Chrome once the user has answered the monitor question. */
+    public static Runnable presentationChoiceListener;
 
     /**
      * The choice for the connected monitor, from the question or the notification; null
@@ -1482,6 +1485,8 @@ public class MainActivity extends AppCompatActivity {
     /** Shows Chrome on the monitor or on the phone until the monitor disconnects. */
     public void setPresentationChoice(boolean onMonitor) {
         presentationChoice = onMonitor;
+        if (presentationChoiceListener != null)
+            presentationChoiceListener.run();
         updatePresentation();
         app.refreshNotificationIfShown();
     }
@@ -1526,7 +1531,8 @@ public class MainActivity extends AppCompatActivity {
             if (presentationQuestion != null)
                 presentationQuestion.dismiss();
         } else if (presentationChoice == null && "ask".equals(prefs.externalDisplay.get())
-                && !isOnExternalDisplay() && getLorieView().connected()) {
+                && !isOnExternalDisplay()) {
+            // Also before Chrome starts: its display scale depends on the answer.
             askAboutPresentation();
         }
         boolean wanted = canPresent();

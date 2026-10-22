@@ -428,6 +428,12 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                         : R.string.lorie_pref_prootAcceleration_summary);
             }
 
+            // Automatic shows the scale it picks; without a monitor it cannot know yet.
+            setAutomaticScale("chromeScale", AutoScale.percent(AutoScale.phone(requireContext())));
+            android.view.Display monitor = AutoScale.monitorDisplay(requireContext());
+            setAutomaticScale("chromeScaleExternal", monitor != null ? AutoScale.percent(AutoScale.monitor(monitor))
+                    : getString(R.string.lorie_pref_chromeScale_fromResolution));
+
             SwitchPreferenceCompat update = findPreference("chromeAutoUpdate");
             if (update != null) {
                 update.setChecked(!runtimeFile(CHROME_UPDATE_OPT_OUT).exists());
@@ -435,6 +441,15 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                 String summary = getString(R.string.lorie_pref_chromeAutoUpdate_summary);
                 update.setSummary(version.isEmpty() ? summary : summary + "\nInstalled: " + version);
             }
+        }
+
+        private void setAutomaticScale(String key, String detail) {
+            ListPreference scale = findPreference(key);
+            if (scale == null)
+                return;
+            CharSequence[] entries = getResources().getTextArray(R.array.chromeScaleEntries).clone();
+            entries[0] = entries[0] + " (" + detail + ")";
+            scale.setEntries(entries);
         }
 
         private boolean setRuntimeOptOut(String name, boolean optOut, String reason) {

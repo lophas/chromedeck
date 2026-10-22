@@ -151,6 +151,9 @@ public final class LinuxRuntime {
         android.content.SharedPreferences prefs = context.getSharedPreferences(
                 context.getPackageName() + "_preferences", Context.MODE_PRIVATE);
         String scale = prefs.getString(external ? "chromeScaleExternal" : "chromeScale", "auto");
+        // Automatic: the scale the app computed for the display, see DesktopChromeApp.
+        if ("auto".equals(scale) && display.length > 2)
+            scale = display[2];
         if (!scale.matches("auto|[0-9]+(\\.[0-9]+)?"))
             scale = "auto";
         // Preferences → Browser → Phone storage: the phone's shared storage at /root/Phone,

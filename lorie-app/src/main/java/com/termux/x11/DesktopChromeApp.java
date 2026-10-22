@@ -85,23 +85,46 @@ public class DesktopChromeApp extends LorieApp implements Application.ActivityLi
 
     @Override public void onActivityCreated(Activity activity, Bundle state) {
         if (!(activity instanceof MainActivity)) return;
-        // The browser session picks the display scale of the display it starts on.
+        windows++;
+        // With a monitor connected Chrome starts after the question whether to use it,
+        // because the display scale is chosen for the display it starts on.
+        if (MainActivity.presentationUndecided(this, builtInPrefs)) {
+            MainActivity.presentationChoiceListener = () -> {
+                MainActivity.presentationChoiceListener = null;
+                if (windows > 0 && !bound && !preparing) {
+                    recordDisplay(activity);
+                    prepareAndBind();
+                }
+            };
+            return;
+        }
+        recordDisplay(activity);
+        prepareAndBind();
+    }
+
+    /** Records the display Chrome starts on, for its display scale and window margin. */
+    private void recordDisplay(Activity activity) {
         boolean onExternal = ((MainActivity) activity).isOnExternalDisplay();
-        boolean external = onExternal || MainActivity.presentationLikely(this, builtInPrefs);
+        boolean external = onExternal || MainActivity.presentationWanted(this, builtInPrefs);
         // Android's desktop mode draws a window caption bar over the top of the window
         // on external displays without reporting it to this app; keep Chrome below it.
         int captionHeight = onExternal
                 ? Math.round(DESKTOP_CAPTION_HEIGHT_DP * activity.getResources().getDisplayMetrics().density) : 0;
         if (!external)
             PhoneScreenOffActivity.dismiss();
+        String autoScale = String.valueOf(external ? monitorScale(activity) : AutoScale.phone(activity));
         try {
             LinuxRuntime.writeText(LinuxRuntime.displayKind(this),
-                    (external ? "external " : "builtin ") + captionHeight + "\n");
+                    (external ? "external " : "builtin ") + captionHeight + " " + autoScale + "\n");
         } catch (IOException error) {
             Log.w(TAG, "Cannot record the window's display", error);
         }
-        windows++;
-        prepareAndBind();
+    }
+
+    private float monitorScale(Activity activity) {
+        android.view.Display display = ((MainActivity) activity).isOnExternalDisplay()
+                ? activity.getWindowManager().getDefaultDisplay() : AutoScale.monitorDisplay(this);
+        return display == null ? 1f : AutoScale.monitor(display);
     }
 
     private void prepareAndBind() {

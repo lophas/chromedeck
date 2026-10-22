@@ -112,11 +112,11 @@ adb install -r chromedeck.apk
     Applies after restarting the app.
 - **External display:** connect a monitor (USB-C or HDMI). When ChromeDeck starts
   with a monitor connected, or a monitor connects while it runs, it asks whether
-  to **Switch to desktop** or **Keep mirroring**. On the desktop, Chrome fills the
+  to **Switch to monitor** or **Keep mirroring**. On the monitor, Chrome fills the
   monitor without a window caption and returns to the phone when the monitor
   disconnects, without restarting. **Remember this choice** saves the answer;
   **Preferences → Browser → Show Chrome on a connected monitor** (Ask / Always /
-  Never) changes it later, and **Desktop** / **Mirroring** in the app's
+  Never) changes it later, and **Monitor** / **Mirroring** in the app's
   notification switch for the current connection; while Chrome is on the monitor
   the notification also offers **Use touchpad** / **Use phone**. On the test phone
   this works in normal mirroring mode; Developer options' desktop mode is not
@@ -134,10 +134,13 @@ adb install -r chromedeck.apk
   **Preferences → Browser → Battery and clock on external display** turns it off,
   and **Battery and clock height** matches it to Chrome's tab strip at another
   display scale.
-- **Display scale:** **Preferences → Browser → Display scale — phone screen** and
-  **— external display** make Chrome's interface and pages larger at full
-  sharpness, like a HiDPI display. Chrome uses the scale of the display it starts
-  on.
+- **Display scale:** **Preferences → Browser → Display scale — phone** and
+  **— monitor** make Chrome's interface and pages larger at full sharpness, like a
+  HiDPI display, from 100% to 400%. **Automatic** (the default) follows Android's
+  display density on the phone, a little smaller for Chrome's desktop interface (250%
+  on a 480 dpi phone), and the resolution on a monitor (125% at 1080p, 150% at
+  1440p, 200% at 2160p). Chrome uses the scale of the display it starts on; with a
+  monitor connected it starts after the monitor question, so the answer decides.
 - **Tabs after a restart:** each profile starts set to Chrome's **On startup →
   Continue where you left off**, so the last session reopens without a crash
   prompt. You can change this in Chrome's settings.

@@ -1,6 +1,23 @@
-# ChromeDeck 0.4.0 — Preview
+# ChromeDeck 0.4.1 — Preview
 
-## New in 0.4.0
+## New in 0.4.1
+
+- **Automatic display scale:** **Automatic** in **Preferences → Browser → Display
+  scale** now picks a scale for the display: from Android's display density on the
+  phone (250% on a 480 dpi phone), from the resolution on a monitor (125% at 1080p,
+  150% at 1440p, 200% at 2160p). New steps up to 400%; the
+  settings show the scale that Automatic picks.
+- With a monitor connected, Chrome starts after the monitor question, so it uses
+  the scale of the display you choose.
+- The interface calls the external display **Monitor**: **Switch to monitor** /
+  **Keep mirroring** in the question, **Monitor** / **Mirroring** in the
+  notification.
+
+Install over 0.4.0 without uninstalling; the browser profile is kept.
+
+## 0.4.0
+
+### New in 0.4.0
 
 - **Monitor choice:** when ChromeDeck starts with a monitor connected, or a monitor
   connects while it runs, it asks whether to **Switch to desktop** or
